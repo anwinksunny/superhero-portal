@@ -11,30 +11,34 @@ const powerIcons = [
 ];
 
 const powerColors = [
-  { from: "from-horizon-accent/20", glow: "group-hover:shadow-[0_0_40px_-8px_rgba(245,169,71,0.5)]" },
-  { from: "from-horizon-accent-secondary/20", glow: "group-hover:shadow-[0_0_40px_-8px_rgba(242,112,92,0.5)]" },
-  { from: "from-horizon-accent/20", glow: "group-hover:shadow-[0_0_40px_-8px_rgba(245,169,71,0.5)]" },
+  { from: "from-horizon-accent/20", glow: "hover:shadow-[0_0_40px_-8px_rgba(245,169,71,0.4)]" },
+  { from: "from-horizon-accent-secondary/20", glow: "hover:shadow-[0_0_40px_-8px_rgba(242,112,92,0.4)]" },
+  { from: "from-horizon-accent/20", glow: "hover:shadow-[0_0_40px_-8px_rgba(245,169,71,0.4)]" },
 ];
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 0, y: 30 },
   visible: (i) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: 0.3 + i * 0.15, duration: 0.7, ease: "easeOut" },
+    transition: { delay: 0.2 + i * 0.15, duration: 0.6, ease: "easeOut" },
   }),
 };
 
 export default function Powers() {
   return (
-    <section id="powers" className="relative w-full bg-horizon-primary overflow-hidden">
-      {/* Background accents */}
-      <div className="absolute inset-0" aria-hidden="true">
-        <div className="absolute top-1/2 left-0 w-[400px] h-[400px] rounded-full bg-horizon-accent/5 blur-3xl -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full bg-horizon-accent-secondary/5 blur-3xl" />
+    <section id="powers" className="relative w-full bg-horizon-primary overflow-hidden py-24 lg:py-32">
+      {/* Background ambient accents */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute top-1/2 left-0 w-[500px] h-[500px] rounded-full bg-horizon-accent/5 blur-3xl -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-horizon-accent-secondary/5 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24 lg:py-32">
+      {/* Top divider accent */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-horizon-accent/30 to-transparent" />
+
+      <div className="relative mx-auto max-w-7xl px-6">
+        {/* Section Header */}
         <div className="max-w-2xl">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -56,57 +60,92 @@ export default function Powers() {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-horizon-text-light leading-tight"
           >
-            What Clarion{" "}
-            <span className="text-gradient-accent">Brings</span>
+            What Clarion <span className="text-gradient-accent">Brings</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-            className="mt-4 text-lg text-horizon-text-muted"
+            className="mt-4 text-base sm:text-lg text-horizon-text-muted leading-relaxed"
           >
-            Three simple gifts for when everything feels unclear.
+            Three gifts born from the Horizon Network to cut through panic, distance, and noise.
           </motion.p>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {heroConfig.powers.map((power, i) => (
-            <motion.article
-              key={power.name}
-              custom={i}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-              variants={cardVariants}
-              className={`group relative rounded-2xl border border-horizon-secondary bg-gradient-to-b from-horizon-secondary/60 to-horizon-primary/40 p-8 transition-all duration-500 hover:-translate-y-1 ${powerColors[i].glow}`}
-            >
-              {/* Top accent line */}
-              <div className="absolute top-0 left-6 right-6 h-[2px] bg-gradient-to-r from-transparent via-horizon-accent/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        {/* 2-Column Content: Hero Image Showcase + 3 Powers */}
+        <div className="mt-14 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          {/* Left Column: clarion-hero.png Showcase Card */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="lg:col-span-5 w-full flex justify-center"
+          >
+            <div className="relative aspect-[3/4] w-full max-w-md rounded-2xl border-2 border-horizon-accent/40 bg-horizon-secondary/80 overflow-hidden shadow-2xl group">
+              <Image
+                src="/clarion-hero.png"
+                alt="Clarion standing on a rooftop at dawn"
+                fill
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+              />
 
-              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-horizon-accent/15 to-horizon-accent-secondary/10 ring-1 ring-horizon-text-muted/20 transition-all duration-300 group-hover:ring-horizon-accent/60 group-hover:shadow-glow-sm">
-                <Image
-                  src={powerIcons[i]}
-                  alt={`${power.name} icon`}
-                  width={64}
-                  height={64}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-              </div>
+              {/* Gradient lighting overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-horizon-primary via-horizon-primary/20 to-transparent opacity-90" />
 
-              <h3 className="mt-6 text-xl font-bold text-horizon-text-light group-hover:text-horizon-accent transition-colors duration-300">
-                {power.name}
-              </h3>
-              <p className="mt-3 text-base leading-relaxed text-horizon-text-muted">
-                {power.description}
-              </p>
+              {/* Corner brackets */}
+              <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-horizon-accent/60" />
+              <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-horizon-accent/60" />
+            </div>
+          </motion.div>
 
-              {/* Card number */}
-              <div className="absolute top-6 right-6 text-5xl font-black text-horizon-text-light/5 select-none">
-                {String(i + 1).padStart(2, "0")}
-              </div>
-            </motion.article>
-          ))}
+          {/* Right Column: 3 Powers Cards */}
+          <div className="lg:col-span-7 flex flex-col gap-5">
+            {heroConfig.powers.map((power, i) => (
+              <motion.article
+                key={power.name}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-80px" }}
+                variants={cardVariants}
+                className={`group relative rounded-2xl border border-horizon-secondary bg-gradient-to-r from-horizon-secondary/70 to-horizon-primary/80 p-6 sm:p-7 transition-all duration-300 hover:-translate-y-1 ${powerColors[i].glow}`}
+              >
+                {/* Top accent line */}
+                <div className="absolute top-0 left-6 right-6 h-[2px] bg-gradient-to-r from-transparent via-horizon-accent/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                <div className="flex items-start gap-5">
+                  {/* Icon */}
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-horizon-accent/15 to-horizon-accent-secondary/10 ring-1 ring-horizon-text-muted/20 transition-all duration-300 group-hover:ring-horizon-accent/60 group-hover:shadow-glow-sm">
+                    <Image
+                      src={powerIcons[i]}
+                      alt={`${power.name} icon`}
+                      width={64}
+                      height={64}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  </div>
+
+                  {/* Text */}
+                  <div className="flex-1 pr-6">
+                    <h3 className="text-xl font-bold text-horizon-text-light group-hover:text-horizon-accent transition-colors duration-300">
+                      {power.name}
+                    </h3>
+                    <p className="mt-2 text-sm sm:text-base leading-relaxed text-horizon-text-muted">
+                      {power.description}
+                    </p>
+                  </div>
+
+                  {/* Card Number */}
+                  <div className="text-3xl sm:text-4xl font-black text-horizon-text-light/10 select-none">
+                    {String(i + 1).padStart(2, "0")}
+                  </div>
+                </div>
+              </motion.article>
+            ))}
+          </div>
         </div>
       </div>
     </section>

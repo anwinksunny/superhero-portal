@@ -19,9 +19,66 @@ const STATE_ORDER = [
 ];
 
 export function getNextState(currentState) {
+  // The GREETING prompt already asks for the visitor's name, so answering
+  // it completes the name step — skip the redundant ASK_NAME prompt.
+  if (currentState === CONVERSATION_STATES.GREETING)
+    return CONVERSATION_STATES.ASK_AGE;
   const index = STATE_ORDER.indexOf(currentState);
   if (index === -1 || index === STATE_ORDER.length - 1) return currentState;
   return STATE_ORDER[index + 1];
+}
+
+// Light validation per step. Returns { ok: true, value } or
+// { ok: false, error } with a friendly message Clarion can send back.
+export function validateInputForState(state, input) {
+  const trimmed = input.trim();
+  if (!trimmed) return { ok: false, error: "Please write something so I can hear you." };
+  switch (state) {
+    case CONVERSATION_STATES.GREETING:
+    case CONVERSATION_STATES.ASK_NAME:
+      if (trimmed.length < 2)
+        return { ok: false, error: "I didn't quite catch your name. What should I call you?" };
+      return { ok: true, value: trimmed };
+    case CONVERSATION_STATES.ASK_AGE: {
+      const age = trimmed.match(/\d+/)?.[0];
+      if (!age || Number(age) < 1 || Number(age) > 120)
+        return { ok: false, error: "How old are you? Just give me a number, like 21." };
+      return { ok: true, value: age };
+    }
+    case CONVERSATION_STATES.ASK_LOCATION:
+      if (trimmed.length < 2)
+        return { ok: false, error: "Which city or town are you in right now?" };
+      return { ok: true, value: trimmed };
+    case CONVERSATION_STATES.ASK_EMAIL: {
+      const email = trimmed.match(/[\w.+-]+@[\w-]+\.[\w.]+/)?.[0];
+      if (!email)
+        return { ok: false, error: "That email doesn't look quite right. What's the best email to reach you at?" };
+      return { ok: true, value: email };
+    }
+    case CONVERSATION_STATES.ASK_PROBLEM:
+      if (trimmed.length < 3)
+        return { ok: false, error: "Take your time. In your own words, what's going on?" };
+      return { ok: true, value: trimmed };
+    default:
+      return { ok: true, value: trimmed };
+  }
+}
+
+// 5 collection steps for the progress indicator.
+const STEP_FOR_STATE = {
+  GREETING: 1,
+  ASK_NAME: 1,
+  ASK_AGE: 2,
+  ASK_LOCATION: 3,
+  ASK_EMAIL: 4,
+  ASK_PROBLEM: 5,
+  DONE: 6,
+};
+
+export const TOTAL_STEPS = 5;
+
+export function getStepForState(state) {
+  return STEP_FOR_STATE[state] ?? 1;
 }
 
 export function getPromptForState(state, heroConfig) {

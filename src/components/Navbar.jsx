@@ -13,6 +13,10 @@ export default function Navbar() {
     setScrolled(latest > 50);
   });
 
+  const openChat = () => {
+    window.dispatchEvent(new CustomEvent("open-clarion-chat"));
+  };
+
   return (
     <motion.nav
       initial={{ y: -80 }}
@@ -51,24 +55,26 @@ export default function Navbar() {
           <a href="#mission" className="text-sm text-horizon-text-muted hover:text-horizon-accent transition-colors duration-200">
             Mission
           </a>
-          <a
-            href="#chat-widget"
+          <button
+            type="button"
+            onClick={openChat}
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-5 py-2 text-sm font-semibold text-horizon-primary shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:scale-105"
           >
             Get Help
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-          </a>
+          </button>
         </div>
 
         {/* Mobile menu button */}
-        <a
-          href="#chat-widget"
+        <button
+          type="button"
+          onClick={openChat}
           className="md:hidden inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-4 py-2 text-sm font-semibold text-horizon-primary"
         >
           Get Help
-        </a>
+        </button>
       </div>
     </motion.nav>
   );

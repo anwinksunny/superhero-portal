@@ -19,6 +19,10 @@ const floatAnimation = {
 };
 
 export default function Hero() {
+  const openChat = () => {
+    window.dispatchEvent(new CustomEvent("open-clarion-chat"));
+  };
+
   return (
     <section className="relative min-h-screen flex items-center bg-horizon-radial overflow-hidden">
       {/* Animated background elements */}
@@ -105,8 +109,9 @@ export default function Hero() {
             variants={fadeUp}
             className="flex flex-wrap gap-4 mt-2"
           >
-            <motion.a
-              href="#chat-widget"
+            <motion.button
+              type="button"
+              onClick={openChat}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-7 py-3.5 text-sm font-bold text-horizon-primary shadow-glow-md transition-shadow duration-300 hover:shadow-glow-lg"
@@ -115,7 +120,7 @@ export default function Hero() {
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
-            </motion.a>
+            </motion.button>
             <a
               href="#origin"
               className="inline-flex items-center gap-2 rounded-full border border-horizon-text-muted/30 px-7 py-3.5 text-sm font-semibold text-horizon-text-light transition-all duration-200 hover:border-horizon-accent/50 hover:text-horizon-accent"

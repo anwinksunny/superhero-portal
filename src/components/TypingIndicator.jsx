@@ -14,21 +14,26 @@ const dotVariants = {
   }),
 };
 
-export default function TypingIndicator({ label = "Clarion is typing" }) {
+export default function TypingIndicator({ label = "Clarion is thinking…" }) {
   return (
-    <div className="flex w-full justify-start">
-      <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-horizon-primary/40 bg-horizon-secondary px-4 py-3">
-        {[0, 1, 2].map((i) => (
-          <motion.span
-            key={i}
-            custom={i}
-            variants={dotVariants}
-            initial="hidden"
-            animate="visible"
-            className="h-2 w-2 rounded-full bg-horizon-accent"
-          />
-        ))}
-        <span className="sr-only">{label}</span>
+    <div className="flex w-full justify-start" aria-live="polite">
+      <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-horizon-secondary bg-horizon-secondary/80 px-4 py-3">
+        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-horizon-accent">
+          Clarion
+        </p>
+        <div className="flex items-center gap-2">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              custom={i}
+              variants={dotVariants}
+              initial="hidden"
+              animate="visible"
+              className="h-2 w-2 shrink-0 rounded-full bg-horizon-accent"
+            />
+          ))}
+          <span className="text-xs text-horizon-text-muted">{label}</span>
+        </div>
       </div>
     </div>
   );

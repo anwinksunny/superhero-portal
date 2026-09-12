@@ -4,6 +4,10 @@ import { motion } from "framer-motion";
 import heroConfig from "@/lib/heroConfig";
 
 export default function CallToAction() {
+  const openChat = () => {
+    window.dispatchEvent(new CustomEvent("open-clarion-chat"));
+  };
+
   return (
     <section className="relative w-full overflow-hidden bg-horizon-primary">
       {/* Background glow effects */}
@@ -38,8 +42,9 @@ export default function CallToAction() {
             Just a real conversation where someone truly listens.
           </p>
 
-          <motion.a
-            href="#chat-widget"
+          <motion.button
+            type="button"
+            onClick={openChat}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
             className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-8 py-4 text-base font-bold text-horizon-primary shadow-glow-md transition-shadow duration-300 hover:shadow-glow-lg"
@@ -48,7 +53,7 @@ export default function CallToAction() {
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-          </motion.a>
+          </motion.button>
         </motion.div>
       </div>
     </section>

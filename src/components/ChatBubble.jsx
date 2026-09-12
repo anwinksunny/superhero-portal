@@ -12,7 +12,7 @@ export default function ChatBubble({ message }) {
       className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+        className={`max-w-[85%] sm:max-w-[80%] break-words rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           isUser
             ? "bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-horizon-primary rounded-br-md shadow-md"
             : "bg-horizon-secondary/80 text-horizon-text-light rounded-bl-md border border-horizon-secondary"
@@ -23,7 +23,7 @@ export default function ChatBubble({ message }) {
             {heroConfig.name}
           </p>
         )}
-        <p>{message.text}</p>
+        <p className="whitespace-pre-wrap break-words">{message.text}</p>
       </div>
     </motion.div>
   );
