@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { buildSystemPrompt } from "@/lib/systemPrompt";
-import { getPromptForState } from "@/lib/conversationFlow";
+import { getHardcodedReply, getPromptForState } from "@/lib/conversationFlow";
 import heroConfig from "@/lib/heroConfig";
 
 function getModel() {
@@ -68,11 +68,20 @@ function sanitizeHistory(history, userMessage) {
 
 export async function POST(request) {
   let conversationState = "GREETING";
+  let userMessage = "";
+  let collectedInfo = {};
 
   try {
     const body = await request.json();
-    const { conversationState: state, history = [], userMessage = "" } = body;
+    const {
+      conversationState: state,
+      history = [],
+      userMessage: msg = "",
+      collectedInfo: info = {},
+    } = body;
     conversationState = state ?? conversationState;
+    userMessage = msg;
+    collectedInfo = info;
 
     // Don't spend quota on empty input — return the step prompt directly.
     if (!String(userMessage ?? "").trim()) {
@@ -107,7 +116,9 @@ export async function POST(request) {
     return Response.json({ reply, source: "ai" });
   } catch (error) {
     console.error("Gemini chat call failed:", error);
-    const reply = getPromptForState(conversationState, heroConfig);
+    // AI unavailable — fall back to the hardcoded scripted flow so the
+    // chat keeps working and still collects every field in order.
+    const reply = getHardcodedReply(conversationState, userMessage, collectedInfo);
     return Response.json({ reply, source: "fallback" });
   }
 }

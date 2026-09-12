@@ -145,6 +145,7 @@ export default function ChatWidget() {
           conversationState,
           history,
           userMessage: trimmed,
+          collectedInfo: updatedInfo,
         }),
       });
       const data = await res.json();
