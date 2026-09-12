@@ -100,7 +100,7 @@ export default function ChatWidget() {
             {
               id: Date.now(),
               role: "clarion",
-              text: "Message sent — Clarion has been notified.",
+              text: "Message sent. Clarion has been told about your request.",
             },
           ]);
         } catch (error) {
@@ -110,7 +110,7 @@ export default function ChatWidget() {
             {
               id: Date.now(),
               role: "clarion",
-              text: "I've got it all written down. If the delivery slips, reach out again — I'm always here.",
+              text: "I've written it all down. If the message doesn't go through, reach out again. I'm always here.",
             },
           ]);
         }
@@ -122,7 +122,7 @@ export default function ChatWidget() {
         {
           id: Date.now(),
           role: "clarion",
-          text: "Give me a moment — let me see this clearly before I answer.",
+          text: "Give me a moment. Let me think about this before I answer.",
         },
       ]);
     } finally {
@@ -132,14 +132,14 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* floating button */}
+      {/* Floating chat button */}
       <motion.button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         aria-label={isOpen ? "Close chat with Clarion" : "Talk to Clarion"}
-        className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-horizon-accent text-horizon-primary shadow-lg shadow-horizon-accent/30 transition-colors hover:bg-horizon-accent-secondary"
+        className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-horizon-primary shadow-glow-md transition-shadow hover:shadow-glow-lg"
         initial={false}
-        animate={{ scale: [1, 1.08, 1] }}
+        animate={{ scale: [1, 1.06, 1] }}
         transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
       >
         <AnimatePresence mode="wait" initial={false}>
@@ -169,7 +169,7 @@ export default function ChatWidget() {
         </AnimatePresence>
       </motion.button>
 
-      {/* chat panel */}
+      {/* Chat panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -177,21 +177,22 @@ export default function ChatWidget() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-horizon-secondary sm:inset-auto sm:bottom-24 sm:right-6 sm:h-[560px] sm:max-h-[calc(100vh-8rem)] sm:w-[400px] sm:rounded-3xl sm:shadow-2xl sm:shadow-black/40 sm:border sm:border-horizon-primary/40"
+            className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-horizon-primary sm:inset-auto sm:bottom-24 sm:right-6 sm:h-[560px] sm:max-h-[calc(100vh-8rem)] sm:w-[400px] sm:rounded-3xl sm:shadow-2xl sm:shadow-black/50 sm:border sm:border-horizon-secondary/60"
             id="chat-widget"
           >
-            {/* header */}
-            <div className="flex items-center justify-between border-b border-horizon-primary/40 px-5 py-4">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-horizon-secondary/60 bg-gradient-to-r from-horizon-secondary/80 to-horizon-primary px-5 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-horizon-accent text-sm font-bold text-horizon-primary">
+                <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-sm font-bold text-horizon-primary">
                   C
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-400 border-2 border-horizon-primary" />
                 </div>
                 <div>
                   <p className="font-semibold text-horizon-text-light">
                     Clarion
                   </p>
-                  <p className="text-xs text-horizon-text-muted">
-                    Always listening
+                  <p className="text-xs text-horizon-accent">
+                    Online now
                   </p>
                 </div>
               </div>
@@ -199,7 +200,7 @@ export default function ChatWidget() {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close chat"
-                className="rounded-full p-2 text-horizon-text-muted transition-colors hover:bg-horizon-primary/40 hover:text-horizon-text-light"
+                className="rounded-full p-2 text-horizon-text-muted transition-colors hover:bg-horizon-secondary hover:text-horizon-text-light"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -215,8 +216,8 @@ export default function ChatWidget() {
               </button>
             </div>
 
-            {/* messages */}
-            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+            {/* Messages area */}
+            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 bg-gradient-to-b from-horizon-primary to-horizon-primary/95">
               {messages.map((m) => (
                 <ChatBubble key={m.id} message={m} />
               ))}
@@ -224,22 +225,22 @@ export default function ChatWidget() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* input */}
+            {/* Input area */}
             <form
               onSubmit={handleSend}
-              className="flex items-center gap-2 border-t border-horizon-primary/40 px-5 py-3"
+              className="flex items-center gap-2 border-t border-horizon-secondary/60 bg-horizon-primary/80 backdrop-blur-sm px-5 py-3"
             >
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Share what's on your mind..."
-                className="flex-1 rounded-full border border-horizon-primary/40 bg-horizon-primary/40 px-4 py-2.5 text-sm text-horizon-text-light placeholder:text-horizon-text-muted outline-none transition-colors focus:border-horizon-accent"
+                className="flex-1 rounded-full border border-horizon-secondary bg-horizon-secondary/40 px-4 py-2.5 text-sm text-horizon-text-light placeholder:text-horizon-text-muted/60 outline-none transition-all focus:border-horizon-accent focus:ring-1 focus:ring-horizon-accent/30"
               />
               <button
                 type="submit"
                 aria-label="Send message"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-horizon-accent text-horizon-primary transition-colors hover:bg-horizon-accent-secondary"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-horizon-primary transition-all hover:shadow-glow-sm hover:scale-105"
               >
                 <svg
                   viewBox="0 0 24 24"

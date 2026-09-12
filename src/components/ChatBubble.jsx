@@ -1,26 +1,30 @@
+import { motion } from "framer-motion";
 import heroConfig from "@/lib/heroConfig";
 
 export default function ChatBubble({ message }) {
   const isUser = message.role === "user";
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
       className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div
         className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           isUser
-            ? "bg-horizon-accent text-horizon-primary rounded-br-md"
-            : "bg-horizon-secondary text-horizon-text-light rounded-bl-md border border-horizon-primary/40"
+            ? "bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-horizon-primary rounded-br-md shadow-md"
+            : "bg-horizon-secondary/80 text-horizon-text-light rounded-bl-md border border-horizon-secondary"
         }`}
       >
         {!isUser && (
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-horizon-accent">
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-horizon-accent">
             {heroConfig.name}
           </p>
         )}
         <p>{message.text}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -5,38 +5,75 @@ import Image from "next/image";
 import heroConfig from "@/lib/heroConfig";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 30 },
   visible: (i) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.15, duration: 0.6, ease: "easeOut" },
+    transition: { delay: 0.2 + i * 0.15, duration: 0.7, ease: "easeOut" },
   }),
+};
+
+const floatAnimation = {
+  y: [0, -10, 0],
+  transition: { duration: 5, repeat: Infinity, ease: "easeInOut" },
 };
 
 export default function Hero() {
   return (
-    <section className="min-h-screen flex items-center bg-horizon-radial relative overflow-hidden">
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-20 lg:py-0 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        {/* text */}
+    <section className="relative min-h-screen flex items-center bg-horizon-radial overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+        <motion.div
+          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-horizon-accent/10 blur-3xl"
+        />
+        <motion.div
+          animate={{ scale: [1.1, 1, 1.1], opacity: [0.2, 0.4, 0.2] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-horizon-accent-secondary/8 blur-3xl"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/3 right-1/4 w-72 h-72 rounded-full bg-horizon-accent/5 blur-3xl"
+        />
+      </div>
+
+      {/* Grid pattern overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        aria-hidden="true"
+        style={{
+          backgroundImage: `linear-gradient(rgba(245,169,71,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(245,169,71,0.3) 1px, transparent 1px)`,
+          backgroundSize: "60px 60px",
+        }}
+      />
+
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-28 lg:py-0 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        {/* Text content */}
         <div className="flex flex-col gap-6 z-10">
-          <motion.p
+          <motion.div
             custom={0}
             initial="hidden"
             animate="visible"
             variants={fadeUp}
-            className="text-sm font-semibold tracking-[0.25em] uppercase text-horizon-accent"
+            className="inline-flex items-center gap-2 self-start rounded-full border border-horizon-accent/30 bg-horizon-accent/10 px-4 py-1.5"
           >
-            The Moment of Clarity
-          </motion.p>
+            <span className="h-2 w-2 rounded-full bg-horizon-accent animate-pulse" />
+            <span className="text-xs font-semibold tracking-[0.2em] uppercase text-horizon-accent">
+              The Moment of Clarity
+            </span>
+          </motion.div>
 
           <motion.h1
             custom={1}
             initial="hidden"
             animate="visible"
             variants={fadeUp}
-            className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[0.95] text-horizon-text-light"
+            className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[0.95]"
           >
-            {heroConfig.name}
+            <span className="text-horizon-text-light">{heroConfig.name}</span>
           </motion.h1>
 
           <motion.p
@@ -44,7 +81,7 @@ export default function Hero() {
             initial="hidden"
             animate="visible"
             variants={fadeUp}
-            className="text-lg sm:text-xl text-horizon-accent max-w-md"
+            className="text-lg sm:text-xl text-gradient-accent font-semibold max-w-md"
           >
             {heroConfig.tagline}
           </motion.p>
@@ -56,27 +93,42 @@ export default function Hero() {
             variants={fadeUp}
             className="text-base text-horizon-text-muted max-w-md leading-relaxed"
           >
-            When you&apos;re stuck between a hard choice and the fear of getting it
-            wrong, Clarion stands beside you — steady, clear, and unhurried —
-            until the path ahead becomes obvious.
+            When you're stuck between a hard choice and the fear of getting it
+            wrong, Clarion stands beside you, steady, clear, and patient,
+            until the path ahead becomes clear.
           </motion.p>
 
-          <motion.a
+          <motion.div
             custom={4}
             initial="hidden"
             animate="visible"
             variants={fadeUp}
-            href="#chat-widget"
-            className="self-start inline-flex items-center gap-2 rounded-full bg-horizon-accent px-7 py-3 text-sm font-semibold text-horizon-primary shadow-lg shadow-horizon-accent/20 transition-colors duration-200 hover:bg-horizon-accent-secondary hover:shadow-horizon-accent-secondary/20"
+            className="flex flex-wrap gap-4 mt-2"
           >
-            Talk to Clarion
-            <span aria-hidden="true" className="text-lg leading-none">
-              &rarr;
-            </span>
-          </motion.a>
+            <motion.a
+              href="#chat-widget"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-7 py-3.5 text-sm font-bold text-horizon-primary shadow-glow-md transition-shadow duration-300 hover:shadow-glow-lg"
+            >
+              Talk to Clarion
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </motion.a>
+            <a
+              href="#origin"
+              className="inline-flex items-center gap-2 rounded-full border border-horizon-text-muted/30 px-7 py-3.5 text-sm font-semibold text-horizon-text-light transition-all duration-200 hover:border-horizon-accent/50 hover:text-horizon-accent"
+            >
+              Learn More
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12l7 7 7-7" />
+              </svg>
+            </a>
+          </motion.div>
         </div>
 
-        {/* image */}
+        {/* Hero image */}
         <motion.div
           custom={2}
           initial="hidden"
@@ -84,29 +136,43 @@ export default function Hero() {
           variants={fadeUp}
           className="relative mx-auto lg:mx-0 w-full max-w-md lg:max-w-lg aspect-square"
         >
-          <Image
-            src="/clarion-hero-cutout.png"
-            alt="Clarion standing on a rooftop at dawn, skyline glowing behind them"
-            fill
-            priority
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-contain drop-shadow-[0_0_40px_rgba(245,169,71,0.12)]"
-          />
+          <motion.div animate={floatAnimation} className="relative w-full h-full">
+            <Image
+              src="/clarion-hero-cutout.png"
+              alt="Clarion standing on a rooftop at dawn, skyline glowing behind them"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-contain drop-shadow-[0_0_60px_rgba(245,169,71,0.15)]"
+            />
+          </motion.div>
+          {/* Glow ring behind hero */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 rounded-full bg-horizon-secondary/50 blur-3xl -z-10"
+            className="absolute inset-0 rounded-full bg-gradient-to-br from-horizon-accent/10 to-horizon-accent-secondary/5 blur-3xl -z-10 scale-110"
+          />
+          {/* Accent ring */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            aria-hidden="true"
+            className="absolute inset-[-10%] rounded-full border border-dashed border-horizon-accent/15 -z-10"
           />
         </motion.div>
       </div>
 
+      {/* Background texture */}
       <Image
         src="/hero-bg-texture.png"
         alt=""
         aria-hidden="true"
         fill
         sizes="100vw"
-        className="absolute inset-0 -z-10 object-cover opacity-15"
+        className="absolute inset-0 -z-10 object-cover opacity-10"
       />
+
+      {/* Bottom gradient fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-horizon-secondary to-transparent" />
     </section>
   );
 }
