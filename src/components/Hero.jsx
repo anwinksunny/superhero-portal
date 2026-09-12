@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import heroConfig from "@/lib/heroConfig";
+import NetworkBackground from "./NetworkBackground";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -27,7 +28,8 @@ export default function Hero() {
     <section className="relative min-h-screen flex items-center bg-horizon-radial overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-        <motion.div
+        {/* Interactive connection network — links up around your cursor */}
+        <NetworkBackground className="absolute inset-0 opacity-70" />        <motion.div
           animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-horizon-accent/10 blur-3xl"
