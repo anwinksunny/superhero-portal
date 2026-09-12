@@ -13,10 +13,10 @@ export const metadata = {
     "Clearing the noise so you can finally see your way forward. Clarion shows up when you're stuck, calm and steady, until the path ahead is clear.",
   icons: {
     icon: [
-      { url: "/clarion-logo.png", type: "image/png" },
+      { url: "/logo.png", type: "image/png" },
       { url: "/favicon.ico?v=2" },
     ],
-    apple: "/clarion-logo.png",
+    apple: "/logo.png",
   },
 };
 

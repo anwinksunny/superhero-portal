@@ -32,7 +32,7 @@ export default function Navbar() {
         <a href="#" className="flex items-center gap-3 group">
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-glow-sm group-hover:scale-105 transition-transform duration-200">
             <Image
-              src="/clarion-logo.png"
+              src="/logo.png"
               alt="Clarion Logo"
               width={40}
               height={40}

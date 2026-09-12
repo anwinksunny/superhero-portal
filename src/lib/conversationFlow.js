@@ -28,17 +28,28 @@ export function getNextState(currentState) {
   return STATE_ORDER[index + 1];
 }
 
-// Light validation per step. Returns { ok: true, value } or
-// { ok: false, error } with a friendly message Clarion can send back.
+// A greeting with no name in it ("hi", "hello", "good morning") must not
+// be mistaken for the visitor's name.
+const GREETING_ONLY = /^(hi+|hii+|hello+|hey+|hai+|yo|good\s?(morning|afternoon|evening|day)|greetings|namaste)[!.…\s]*$/i;
+
+// "my name is Anwin" / "i'm Anwin" → store just "Anwin".
+function extractName(trimmed) {
+  const m = trimmed.match(
+    /(?:my name is|i['’]m|i am|this is|call me)\s+([A-Za-z][A-Za-z'’.-]*(?:\s+[A-Za-z][A-Za-z'’.-]*)?)/i
+  );
+  return m ? m[1].trim() : trimmed;
+}
 export function validateInputForState(state, input) {
   const trimmed = input.trim();
   if (!trimmed) return { ok: false, error: "Please write something so I can hear you." };
   switch (state) {
     case CONVERSATION_STATES.GREETING:
     case CONVERSATION_STATES.ASK_NAME:
+      if (GREETING_ONLY.test(trimmed))
+        return { ok: false, error: "Hi there! I'm really glad you're here. What's your name?" };
       if (trimmed.length < 2)
         return { ok: false, error: "I didn't quite catch your name. What should I call you?" };
-      return { ok: true, value: trimmed };
+      return { ok: true, value: extractName(trimmed) };
     case CONVERSATION_STATES.ASK_AGE: {
       const age = trimmed.match(/\d+/)?.[0];
       if (!age || Number(age) < 1 || Number(age) > 120)

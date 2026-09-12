@@ -14,7 +14,7 @@ export default function Footer() {
           {/* Logo */}
           <div className="relative flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden shadow-glow-sm hover:scale-105 transition-transform duration-200">
             <Image
-              src="/clarion-logo.png"
+              src="/logo.png"
               alt="Clarion Logo"
               width={48}
               height={48}

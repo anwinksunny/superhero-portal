@@ -253,7 +253,7 @@ export default function ChatWidget() {
               <div className="flex items-center gap-3">
                 <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
                   <Image
-                    src="/clarion-logo.png"
+                    src="/logo.png"
                     alt="Clarion Avatar"
                     width={40}
                     height={40}
