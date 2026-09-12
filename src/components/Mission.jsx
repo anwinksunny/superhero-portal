@@ -18,8 +18,9 @@ export default function Mission() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="relative mx-auto max-w-4xl px-6 py-24 lg:py-32 text-center"
       >
-        <div className="inline-flex items-center gap-2 rounded-full border border-horizon-accent/30 bg-horizon-accent/10 px-4 py-1.5 mb-8">
-          <span className="text-xs font-semibold tracking-[0.2em] uppercase text-horizon-accent">
+        <div className="inline-flex items-center gap-2.5 rounded-md border border-horizon-accent/40 bg-horizon-primary/80 px-3.5 py-1.5 mb-8 backdrop-blur-md shadow-[0_0_15px_-3px_rgba(245,169,71,0.2)]">
+          <span className="h-2 w-2 rotate-45 bg-horizon-accent shadow-[0_0_8px_#F5A947]" />
+          <span className="text-xs font-bold tracking-[0.2em] uppercase text-horizon-accent">
             The Mission
           </span>
         </div>

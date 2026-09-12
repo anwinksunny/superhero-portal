@@ -1,3 +1,4 @@
+import Image from "next/image";
 import heroConfig from "@/lib/heroConfig";
 
 export default function Footer() {
@@ -11,8 +12,14 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-6 pt-10 pb-28 md:pb-10">
         <div className="flex flex-col items-center gap-4 text-center">
           {/* Logo */}
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-horizon-primary font-bold text-lg">
-            C
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden shadow-glow-sm hover:scale-105 transition-transform duration-200">
+            <Image
+              src="/clarion-logo.png"
+              alt="Clarion Logo"
+              width={48}
+              height={48}
+              className="h-full w-full object-contain"
+            />
           </div>
 
           <p className="text-lg font-bold text-horizon-text-light">

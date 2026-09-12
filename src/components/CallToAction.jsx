@@ -20,9 +20,12 @@ export default function CallToAction() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="space-y-8"
         >
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-horizon-accent">
-            Need Someone in Your Corner?
-          </p>
+          <div className="inline-flex items-center gap-2.5 rounded-md border border-horizon-accent/40 bg-horizon-secondary/80 px-3.5 py-1.5 backdrop-blur-md shadow-[0_0_15px_-3px_rgba(245,169,71,0.2)]">
+            <span className="h-2 w-2 rotate-45 bg-horizon-accent shadow-[0_0_8px_#F5A947]" />
+            <span className="text-xs font-bold tracking-[0.2em] uppercase text-horizon-accent">
+              Need Someone in Your Corner?
+            </span>
+          </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-horizon-text-light leading-tight">
             Don't face it alone.

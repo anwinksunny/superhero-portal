@@ -58,10 +58,10 @@ export default function Hero() {
             initial="hidden"
             animate="visible"
             variants={fadeUp}
-            className="inline-flex items-center gap-2 self-start rounded-full border border-horizon-accent/30 bg-horizon-accent/10 px-4 py-1.5"
+            className="inline-flex items-center gap-2.5 self-start rounded-md border border-horizon-accent/40 bg-horizon-secondary/80 px-3.5 py-1.5 backdrop-blur-md shadow-[0_0_15px_-3px_rgba(245,169,71,0.2)]"
           >
-            <span className="h-2 w-2 rounded-full bg-horizon-accent animate-pulse" />
-            <span className="text-xs font-semibold tracking-[0.2em] uppercase text-horizon-accent">
+            <span className="h-2 w-2 rotate-45 bg-horizon-accent shadow-[0_0_8px_#F5A947]" />
+            <span className="text-xs font-bold tracking-[0.2em] uppercase text-horizon-accent">
               The Moment of Clarity
             </span>
           </motion.div>
@@ -93,9 +93,9 @@ export default function Hero() {
             variants={fadeUp}
             className="text-base text-horizon-text-muted max-w-md leading-relaxed"
           >
-            When you're stuck between a hard choice and the fear of getting it
-            wrong, Clarion stands beside you, steady, clear, and patient,
-            until the path ahead becomes clear.
+            When emergency calls and hard choices get buried under the noise of the city,
+            Clarion stands beside you, steady, calm, and patient,
+            until the way forward becomes clear.
           </motion.p>
 
           <motion.div

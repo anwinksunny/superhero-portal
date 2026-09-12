@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import ChatBubble from "./ChatBubble";
 import TypingIndicator from "./TypingIndicator";
 import heroConfig from "@/lib/heroConfig";
@@ -183,9 +184,15 @@ export default function ChatWidget() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-horizon-secondary/60 bg-gradient-to-r from-horizon-secondary/80 to-horizon-primary px-5 py-4">
               <div className="flex items-center gap-3">
-                <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-sm font-bold text-horizon-primary">
-                  C
-                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-400 border-2 border-horizon-primary" />
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                  <Image
+                    src="/clarion-logo.png"
+                    alt="Clarion Avatar"
+                    width={40}
+                    height={40}
+                    className="h-full w-full object-contain rounded-full ring-2 ring-horizon-accent/40"
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2 border-horizon-primary shadow-sm" />
                 </div>
                 <div>
                   <p className="font-semibold text-horizon-text-light">

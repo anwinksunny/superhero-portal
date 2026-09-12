@@ -2,6 +2,7 @@
 
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
+import Image from "next/image";
 import heroConfig from "@/lib/heroConfig";
 
 export default function Navbar() {
@@ -25,8 +26,15 @@ export default function Navbar() {
     >
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
         <a href="#" className="flex items-center gap-3 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-horizon-primary font-bold text-lg shadow-glow-sm">
-            C
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-glow-sm group-hover:scale-105 transition-transform duration-200">
+            <Image
+              src="/clarion-logo.png"
+              alt="Clarion Logo"
+              width={40}
+              height={40}
+              className="h-full w-full object-contain"
+              priority
+            />
           </div>
           <span className="text-xl font-bold text-horizon-text-light tracking-tight">
             {heroConfig.name}

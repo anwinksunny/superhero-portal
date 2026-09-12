@@ -1,99 +1,453 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import heroConfig from "@/lib/heroConfig";
+
+const COMIC_PANELS = [
+  {
+    id: 1,
+    image: "/origin/1.png",
+    isVertical: false,
+    type: "caption-top-left",
+    caption: "Three months. Same question. Still no answer.",
+  },
+  {
+    id: 2,
+    image: "/origin/2.png",
+    isVertical: false,
+    type: "thought-top-right",
+    thought: "I can't think in here anymore.",
+  },
+  {
+    id: 3,
+    image: "/origin/3.png",
+    isVertical: true, // Vertical 1024x1536
+    type: "caption-bottom-left",
+    caption: "So I went up. Because down had stopped making sense.",
+  },
+  {
+    id: 4,
+    image: "/origin/4.png",
+    isVertical: false,
+    type: "speech-top-center",
+    speech: "I don't know which way is forward.",
+  },
+  {
+    id: 5,
+    image: "/origin/5.png",
+    isVertical: false,
+    type: "caption-top-center",
+    caption: "The city didn't answer. Something else did.",
+  },
+  {
+    id: 6,
+    image: "/origin/6.png",
+    isVertical: false,
+    type: "sfx-and-caption",
+    sfx: "hhhhhnnn...",
+    caption: "Every street. Every rooftop. Every light. Suddenly, a pattern.",
+  },
+  {
+    id: 7,
+    image: "/origin/7.png",
+    isVertical: false,
+    type: "caption-bottom-right",
+    caption: "The answer had been there the whole time. I just hadn't been still enough to see it.",
+  },
+  {
+    id: 8,
+    image: "/origin/8.png",
+    isVertical: false,
+    type: "speech-right-center",
+    speech: "I can feel them.",
+  },
+  {
+    id: 9,
+    image: "/origin/9.png",
+    isVertical: false,
+    type: "caption-top-wide",
+    caption: "Somewhere out there. Right now. Someone else was standing at their own edge, just like I had been.",
+  },
+  {
+    id: 10,
+    image: "/origin/10.png",
+    isVertical: false,
+    type: "caption-bottom-wide",
+    caption: "I didn't choose this. It chose me, the moment I finally stood still.",
+  },
+  {
+    id: 11,
+    image: "/origin/11.png",
+    isVertical: true, // Vertical 1024x1536
+    type: "newspaper-bottom-right",
+    caption: "I never picked the name. The city gave it to me. It stuck.",
+  },
+  {
+    id: 12,
+    image: "/origin/12.png",
+    isVertical: false,
+    type: "titlecard-splash",
+    title: "CLARION",
+    caption: "I am the clear call that cuts through confusion, so no one finds their way out alone.",
+  },
+];
+
+const COMIC_PAGES = [
+  {
+    pageId: 1,
+    panels: [COMIC_PANELS[0], COMIC_PANELS[1]],
+  },
+  {
+    pageId: 2,
+    panels: [COMIC_PANELS[2], COMIC_PANELS[3]], // Panel 3 is Vertical
+  },
+  {
+    pageId: 3,
+    panels: [COMIC_PANELS[4], COMIC_PANELS[5]],
+  },
+  {
+    pageId: 4,
+    panels: [COMIC_PANELS[6], COMIC_PANELS[7]],
+  },
+  {
+    pageId: 5,
+    panels: [COMIC_PANELS[8], COMIC_PANELS[9]],
+  },
+  {
+    pageId: 6,
+    panels: [COMIC_PANELS[10], COMIC_PANELS[11]], // Panel 11 is Vertical
+  },
+];
 
 export default function OriginStory() {
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowRight" || e.key === " ") {
+        nextPage();
+      } else if (e.key === "ArrowLeft") {
+        prevPage();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentPageIndex]);
+
+  const nextPage = () => {
+    setCurrentPageIndex((prev) => (prev + 1) % COMIC_PAGES.length);
+  };
+
+  const prevPage = () => {
+    setCurrentPageIndex((prev) => (prev - 1 + COMIC_PAGES.length) % COMIC_PAGES.length);
+  };
+
+  const currentPage = COMIC_PAGES[currentPageIndex];
+  const progressPercent = ((currentPageIndex + 1) / COMIC_PAGES.length) * 100;
+
+  // Clean Manhwa-style White Box with Black Text (no "NARRATION", "THOUGHT", "SPEECH" labels)
+  const renderManhwaOverlay = (p) => {
+    switch (p.type) {
+      case "caption-top-left":
+        return (
+          <div className="absolute top-4 left-4 sm:top-6 sm:left-6 max-w-[85%] sm:max-w-xs z-20">
+            <div className="bg-white border-2 border-black p-3.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.caption}&rdquo;
+              </p>
+            </div>
+          </div>
+        );
+
+      case "thought-top-right":
+        return (
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 max-w-[85%] sm:max-w-xs z-20 flex flex-col items-end">
+            <div className="bg-white border-2 border-black px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              <p className="text-xs sm:text-sm font-black italic text-black leading-snug">
+                &ldquo;{p.thought}&rdquo;
+              </p>
+            </div>
+            {/* Thought bubble trail dots */}
+            <div className="flex flex-col items-center gap-1 mt-1 mr-6">
+              <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-black shadow-[1px_1px_0px_rgba(0,0,0,1)]" />
+              <div className="w-1.5 h-1.5 rounded-full bg-white border border-black mr-2 shadow-[1px_1px_0px_rgba(0,0,0,1)]" />
+            </div>
+          </div>
+        );
+
+      case "caption-bottom-left":
+        return (
+          <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 max-w-[85%] sm:max-w-xs z-20">
+            <div className="bg-white border-2 border-black p-3.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.caption}&rdquo;
+              </p>
+            </div>
+          </div>
+        );
+
+      case "speech-top-center":
+        return (
+          <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 max-w-[85%] sm:max-w-xs z-20 flex flex-col items-center">
+            <div className="bg-white border-2 border-black px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.speech}&rdquo;
+              </p>
+            </div>
+            {/* Pointer tail */}
+            <div className="w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-t-[10px] border-t-white -mt-[1px] filter drop-shadow-[0_2px_0_rgba(0,0,0,1)]" />
+          </div>
+        );
+
+      case "caption-top-center":
+        return (
+          <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 max-w-[90%] sm:max-w-sm w-full z-20">
+            <div className="bg-white border-2 border-black p-3.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.caption}&rdquo;
+              </p>
+            </div>
+          </div>
+        );
+
+      case "sfx-and-caption":
+        return (
+          <>
+            {/* SFX near face */}
+            <div className="absolute top-1/4 left-1/4 z-20">
+              <div className="bg-white border-2 border-black px-3 py-1 -rotate-6 shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+                <span className="text-sm sm:text-lg font-black italic tracking-widest text-black font-mono">
+                  {p.sfx}
+                </span>
+              </div>
+            </div>
+            {/* Caption bottom edge */}
+            <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 max-w-[90%] sm:max-w-sm w-full z-20">
+              <div className="bg-white border-2 border-black p-3.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
+                <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                  &ldquo;{p.caption}&rdquo;
+                </p>
+              </div>
+            </div>
+          </>
+        );
+
+      case "caption-bottom-right":
+        return (
+          <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 max-w-[85%] sm:max-w-xs z-20">
+            <div className="bg-white border-2 border-black p-3.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.caption}&rdquo;
+              </p>
+            </div>
+          </div>
+        );
+
+      case "speech-right-center":
+        return (
+          <div className="absolute top-1/3 right-4 sm:right-8 max-w-[85%] sm:max-w-xs z-20 flex flex-col items-start">
+            <div className="bg-white border-2 border-black px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.speech}&rdquo;
+              </p>
+            </div>
+            {/* Tail pointing left */}
+            <div className="w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[10px] border-r-white -ml-2 -mt-3 filter drop-shadow-[-2px_0_0_rgba(0,0,0,1)]" />
+          </div>
+        );
+
+      case "caption-top-wide":
+        return (
+          <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 max-w-[92%] sm:max-w-md w-full z-20">
+            <div className="bg-white border-2 border-black p-3.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.caption}&rdquo;
+              </p>
+            </div>
+          </div>
+        );
+
+      case "caption-bottom-wide":
+        return (
+          <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 max-w-[92%] sm:max-w-md w-full z-20">
+            <div className="bg-white border-2 border-black p-3.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.caption}&rdquo;
+              </p>
+            </div>
+          </div>
+        );
+
+      case "newspaper-bottom-right":
+        return (
+          <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 max-w-[85%] sm:max-w-xs z-20">
+            <div className="bg-white border-2 border-black p-3 sm:p-3.5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              <p className="text-xs sm:text-sm font-black text-black leading-snug">
+                &ldquo;{p.caption}&rdquo;
+              </p>
+            </div>
+          </div>
+        );
+
+      case "titlecard-splash":
+        return (
+          <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20">
+            <div className="bg-white border-2 border-black p-4 sm:p-5 shadow-[5px_5px_0px_rgba(0,0,0,1)]">
+              <h3 className="text-2xl sm:text-4xl font-black text-black tracking-tight uppercase mb-1">
+                {p.title}
+              </h3>
+              <p className="text-xs sm:text-sm font-black italic text-neutral-900 leading-snug">
+                &ldquo;{p.caption}&rdquo;
+              </p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
-    <section id="origin" className="relative w-full overflow-hidden bg-horizon-secondary">
-      <div className="absolute inset-0" aria-hidden="true">
-        <Image
-          src="/origin-story-bg.png"
-          alt=""
-          fill
-          sizes="100vw"
-          className="object-cover opacity-20"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-horizon-secondary via-horizon-secondary/60 to-horizon-secondary" />
+    <section id="origin" className="relative w-full bg-horizon-secondary py-24 lg:py-32 overflow-hidden">
+      {/* Background ambient glow */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full bg-horizon-accent/5 blur-3xl" />
+        <div className="absolute -bottom-20 right-10 w-[400px] h-[400px] rounded-full bg-horizon-accent-secondary/5 blur-3xl" />
       </div>
 
-      {/* Accent glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[2px] bg-gradient-to-r from-transparent via-horizon-accent/60 to-transparent" aria-hidden="true" />
+      {/* Top divider accent */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-horizon-accent/40 to-transparent" />
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24 lg:py-32">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <div className="max-w-3xl">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="inline-flex items-center gap-2 rounded-full border border-horizon-accent/30 bg-horizon-accent/10 px-4 py-1.5 mb-6"
-            >
-              <span className="text-xs font-semibold tracking-[0.2em] uppercase text-horizon-accent">
-                Origin Story
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Section Header */}
+        <div className="pb-10">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-horizon-text-light tracking-tight"
+          >
+            My Origin <span className="text-gradient-accent">Story</span>
+          </motion.h2>
+        </div>
+
+        {/* 2-Panel Page Reader */}
+        <div className="space-y-6">
+          {/* Main Comic Frame */}
+          <div className="relative rounded-2xl border-4 border-black bg-horizon-primary shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] overflow-hidden">
+            {/* Top Progress Bar */}
+            <div className="w-full bg-neutral-900 h-1.5">
+              <motion.div
+                className="bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary h-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+
+            {/* Page Header Bar */}
+            <div className="flex items-center justify-between px-5 py-3 bg-[#0a1f22] border-b-2 border-black text-xs font-bold">
+              <span className="bg-white text-black px-2.5 py-1 text-xs font-black uppercase tracking-wider shadow-sm">
+                PAGE {currentPage.pageId}
               </span>
-            </motion.div>
 
-            <motion.h2
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-horizon-text-light leading-tight"
-            >
-              The Story Behind{" "}
-              <span className="text-gradient-accent">Clarion</span>
-            </motion.h2>
+              <span className="text-horizon-accent font-mono text-xs font-bold">
+                PAGE {currentPage.pageId} OF {COMIC_PAGES.length}
+              </span>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
-              className="mt-8 relative pl-6 border-l-2 border-horizon-accent/30"
-            >
-              <div className="absolute top-0 left-[-5px] w-2 h-2 rounded-full bg-horizon-accent" />
-              <p className="text-lg sm:text-xl leading-relaxed text-horizon-text-light/90">
-                {heroConfig.originStory}
-              </p>
-            </motion.div>
+            {/* 2 Panels Viewport */}
+            <div className="p-4 sm:p-6 bg-[#040e10]">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentPage.pageId}
+                  initial={{ opacity: 0, scale: 0.99 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.99 }}
+                  transition={{ duration: 0.3 }}
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-stretch"
+                >
+                  {currentPage.panels.map((p) => {
+                    return (
+                      <div
+                        key={p.id}
+                        className="relative rounded-xl border-4 border-black bg-[#061416] overflow-hidden shadow-2xl flex items-center justify-center min-h-[400px] sm:min-h-[500px] lg:min-h-[560px]"
+                      >
+                        {/* Image: Vertical images (3 & 11) use object-contain so full image is preserved */}
+                        <div className="relative w-full h-full min-h-[400px] sm:min-h-[500px] lg:min-h-[560px]">
+                          <Image
+                            src={p.image}
+                            alt=""
+                            fill
+                            priority
+                            sizes="(max-width: 1024px) 100vw, 50vw"
+                            className={p.isVertical ? "object-contain py-2" : "object-cover sm:object-contain py-1"}
+                          />
 
-            <motion.p
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-              className="mt-8 text-base text-horizon-text-muted leading-relaxed"
-            >
-              Sounds hard to believe? Clarion's promise is simple: when the noise
-              gets too loud, someone steps in. No cape, no show. Just a
-              steady voice, and a clear path forward.
-            </motion.p>
+                          {/* Inner comic panel border */}
+                          <div className="absolute inset-0 ring-1 ring-inset ring-black/40 pointer-events-none" />
+
+                          {/* Clean Manhwa-style White Box with Black Text */}
+                          {renderManhwaOverlay(p)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Page Reader Controls */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-4 bg-[#0a1f22] border-t-2 border-black">
+              <button
+                type="button"
+                onClick={prevPage}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-black border-2 border-black px-5 py-2.5 text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-transform"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                Previous Page
+              </button>
+
+              {/* 6 Page Selector Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                {COMIC_PAGES.map((pg, idx) => (
+                  <button
+                    key={pg.pageId}
+                    type="button"
+                    onClick={() => setCurrentPageIndex(idx)}
+                    className={`px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border-2 border-black transition-all ${
+                      currentPageIndex === idx
+                        ? "bg-horizon-accent text-horizon-primary shadow-[2px_2px_0px_rgba(0,0,0,1)] scale-105"
+                        : "bg-white text-black hover:bg-neutral-100"
+                    }`}
+                  >
+                    Page {pg.pageId}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={nextPage}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary text-horizon-primary border-2 border-black px-6 py-2.5 text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-transform"
+              >
+                {currentPageIndex === COMIC_PAGES.length - 1 ? "Start Over" : "Next Page"}
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 32 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="relative hidden lg:block"
-          >
-            <div className="relative aspect-[3/4] max-w-sm mx-auto overflow-hidden rounded-2xl border border-horizon-accent/20 shadow-2xl shadow-black/30">
-              <Image
-                src="/clarion-hero.png"
-                alt="Clarion, framed against the sky at dawn"
-                fill
-                sizes="(max-width: 1024px) 0vw, 30vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-horizon-primary/70 via-transparent to-transparent" />
-              {/* Corner accent */}
-              <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-horizon-accent/40 rounded-tr-lg" />
-              <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-horizon-accent/40 rounded-bl-lg" />
-            </div>
-          </motion.div>
+          <p className="text-center text-xs text-horizon-text-muted">
+            Tip: Use <kbd className="px-1.5 py-0.5 rounded bg-black text-white border border-white/20 font-mono">←</kbd> and <kbd className="px-1.5 py-0.5 rounded bg-black text-white border border-white/20 font-mono">→</kbd> arrow keys to turn the pages.
+          </p>
         </div>
       </div>
     </section>

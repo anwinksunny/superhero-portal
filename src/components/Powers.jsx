@@ -41,9 +41,10 @@ export default function Powers() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="inline-flex items-center gap-2 rounded-full border border-horizon-accent/30 bg-horizon-accent/10 px-4 py-1.5 mb-6"
+            className="inline-flex items-center gap-2.5 rounded-md border border-horizon-accent/40 bg-horizon-secondary/80 px-3.5 py-1.5 mb-6 backdrop-blur-md shadow-[0_0_15px_-3px_rgba(245,169,71,0.2)]"
           >
-            <span className="text-xs font-semibold tracking-[0.2em] uppercase text-horizon-accent">
+            <span className="h-2 w-2 rotate-45 bg-horizon-accent shadow-[0_0_8px_#F5A947]" />
+            <span className="text-xs font-bold tracking-[0.2em] uppercase text-horizon-accent">
               Powers & Abilities
             </span>
           </motion.div>
