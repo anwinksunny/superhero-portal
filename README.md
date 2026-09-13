@@ -22,6 +22,7 @@ chat that turns conversations into actionable requests.
 | | |
 |---|---|
 | 🦸 **Hero landing** | Full-screen intro with an interactive "Horizon Network" canvas that links drifting nodes to your cursor |
+| 👋 **Proactive greeting** | Clarion opens the conversation automatically ~2s after arrival — on every visit, refreshes included — unless the visitor has already clicked something or started typing |
 | 📖 **Comic origin story** | 12-panel paged reader — two-panel spreads on desktop, a swipeable one-panel reader on mobile |
 | 🗨️ **AI intake chat** | A guided 6-step conversation (name → age → location → email → problem) with an AI voice, local validation, typo-tolerant email suggestions and in-flow corrections |
 | 📧 **Email delivery** | Completed intakes are emailed via EmailJS; the SDK is loaded only at the moment of sending |
@@ -115,7 +116,7 @@ src/
 │   ├── CallToAction.jsx      # Final conversion section
 │   ├── ChatWidget.jsx        # Guided intake chat (lazy-loaded)
 │   ├── ChatBubble.jsx        # Memoized message bubble
-│   ├── LazyChatWidget.jsx    # Portal that mounts ChatWidget on demand
+│   ├── LazyChatWidget.jsx    # Auto-greeting portal mounting ChatWidget
 │   ├── SmoothImage.jsx       # next/image wrapper: blur reveal, no CLS
 │   └── MotionProvider.jsx    # Global motion config + low-end detection
 └── lib/
@@ -137,11 +138,16 @@ costs anything.**
   only the navbar, hero and footer.
 - **Lazy chat** — the entire chat stack (Framer Motion panel, validation,
   EmailJS) ships in a separate chunk that is *prewarmed during browser idle
-  time* and only mounted on first interaction.
+  time* and only mounted when needed.
 - **Memoized bubbles** — chat messages are `memo`-wrapped so typing never
   re-renders the transcript.
 - **Static prerendering** — the landing page is fully static; the only dynamic
   route is the chat API.
+- **Respectful auto-greeting** — the chat opens itself on every visit (hero
+  first, then the widget), but yields to real intent: a deliberate click/tap
+  or typing before the timer cancels it. Plain scrolling never does. On touch
+  devices a second timer gives Clarion a second chance, so an accidental tap
+  during load can't silence the greeting. Low-end devices stay quiet.
 
 ### Adaptive device tiers
 
