@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import heroConfig from "@/lib/heroConfig";
 
-export default function ChatBubble({ message }) {
+function ChatBubble({ message }) {
   const isUser = message.role === "user";
 
   return (
@@ -28,3 +29,7 @@ export default function ChatBubble({ message }) {
     </motion.div>
   );
 }
+
+// Message objects are immutable in state — memoizing keeps every keystroke
+// in the input from re-rendering the whole transcript.
+export default memo(ChatBubble);
