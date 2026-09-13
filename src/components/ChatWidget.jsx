@@ -1,18 +1,20 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
+import SmoothImage from "./SmoothImage";
 import ChatBubble from "./ChatBubble";
-import TypingIndicator from "./TypingIndicator";
 import heroConfig from "@/lib/heroConfig";
 import sendGrievanceEmail from "@/lib/sendEmail";
 import {
   CONVERSATION_STATES,
   TOTAL_STEPS,
+  detectCorrection,
+  getHardcodedReply,
   getNextState,
   getPromptForState,
   getStepForState,
+  suggestEmailFix,
   validateInputForState,
 } from "@/lib/conversationFlow";
 
@@ -39,8 +41,8 @@ function collectInfo(currentState, input, info) {
   }
 }
 
-export default function ChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function ChatWidget({ initialOpen = false, onClose }) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [messages, setMessages] = useState(() => [
     {
       id: 1,
@@ -53,7 +55,7 @@ export default function ChatWidget() {
   );
   const [collectedInfo, setCollectedInfo] = useState({});
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const emailSentRef = useRef(false);
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -70,7 +72,7 @@ export default function ChatWidget() {
 
   useEffect(() => {
     scrollToBottom(true);
-  }, [messages, isTyping]);
+  }, [messages, isThinking]);
 
   // Lock home-page scroll while chat is open (critical on mobile fullscreen)
   useEffect(() => {
@@ -86,38 +88,115 @@ export default function ChatWidget() {
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    const openChat = () => setIsOpen(true);
-    window.addEventListener("open-clarion-chat", openChat);
-    return () => window.removeEventListener("open-clarion-chat", openChat);
-  }, []);
+  const closeChat = useCallback(() => {
+    setIsOpen(false);
+    onClose?.();
+  }, [onClose]);
+
+  const getAIReply = async ({ message, fallback, isCorrection, isValid }) => {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          stage: conversationState,
+          fallback,
+          isCorrection,
+          isValid,
+        }),
+      });
+      const data = await response.json();
+      return response.ok && data?.reply ? data.reply : fallback;
+    } catch {
+      return fallback;
+    }
+  };
 
   // Focus the input when the chat opens + allow Escape to close.
   useEffect(() => {
     if (!isOpen) return;
     const t = setTimeout(() => inputRef.current?.focus(), 300);
     const onKey = (e) => {
-      if (e.key === "Escape") setIsOpen(false);
+      if (e.key === "Escape") closeChat();
     };
     window.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(t);
       window.removeEventListener("keydown", onKey);
     };
-  }, [isOpen]);
+  }, [isOpen, closeChat]);
 
   const handleSend = async (e) => {
     e.preventDefault();
     const trimmed = input.trim();
-    if (!trimmed || isTyping) return;
+    if (!trimmed || isThinking) return;
 
-    // Validate before spending an AI call or advancing the flow.
-    const check = validateInputForState(conversationState, trimmed);
-    if (!check.ok) {
+    // Fixing something given earlier ("no, it's x@gmail.com") is not the
+    // answer to the current question: update that field, stay on this
+    // step, and never finish/send on a correction. This must happen before
+    // validating the current field: a name correction is not an age.
+    const correction = detectCorrection(conversationState, trimmed, collectedInfo);
+    if (correction) {
+      // A "correction" that is itself a typo'd provider domain gets the
+      // same did-you-mean treatment instead of being stored.
+      if (correction.field === "email") {
+        const fixed = suggestEmailFix(correction.value);
+        if (fixed) {
+          const fallback = `Did you mean ${fixed}? Send it again to confirm.`;
+          setIsThinking(true);
+          const reply = await getAIReply({
+            message: trimmed,
+            fallback,
+            isCorrection: true,
+            isValid: false,
+          });
+          setIsThinking(false);
+          setMessages((prev) => [
+            ...prev,
+            { id: nextId(), role: "user", text: trimmed },
+            { id: nextId(), role: "clarion", text: reply },
+          ]);
+          setInput("");
+          return;
+        }
+      }
+      const correctedInfo = { ...collectedInfo, [correction.field]: correction.value };
+      setCollectedInfo(correctedInfo);
+      const fallback = `Thanks — I've updated that. ${getPromptForState(conversationState, heroConfig)}`;
+      setIsThinking(true);
+      const reply = await getAIReply({
+        message: trimmed,
+        fallback,
+        isCorrection: true,
+        isValid: true,
+      });
+      setIsThinking(false);
       setMessages((prev) => [
         ...prev,
         { id: nextId(), role: "user", text: trimmed },
-        { id: nextId(), role: "clarion", text: check.error },
+        { id: nextId(), role: "clarion", text: reply },
+      ]);
+      setInput("");
+      return;
+    }
+
+    // This is a short, predictable intake flow. Keeping it local avoids a
+    // network round trip (and sending personal details to an AI) for each step.
+    const check = validateInputForState(conversationState, trimmed);
+    if (!check.ok) {
+      setIsThinking(true);
+      const reply = await getAIReply({
+        message: trimmed,
+        fallback: check.error,
+        isCorrection: false,
+        isValid: false,
+      });
+      setIsThinking(false);
+      setMessages((prev) => [
+        ...prev,
+        { id: nextId(), role: "user", text: trimmed },
+        { id: nextId(), role: "clarion", text: reply },
       ]);
       setInput("");
       return;
@@ -130,73 +209,49 @@ export default function ChatWidget() {
       { id: nextId(), role: "user", text: trimmed },
     ]);
     setInput("");
-    setIsTyping(true);
+    const nextState = getNextState(conversationState);
+    const fallback = getHardcodedReply(conversationState, trimmed, updatedInfo);
+    setIsThinking(true);
+    const reply = await getAIReply({
+      message: trimmed,
+      fallback,
+      isCorrection: false,
+      isValid: true,
+    });
+    setIsThinking(false);
+    setMessages((prev) => [
+      ...prev,
+      { id: nextId(), role: "clarion", text: reply },
+    ]);
 
-    const history = [
-      ...messages,
-      { id: nextId(), role: "user", text: trimmed },
-    ];
+    setConversationState(nextState);
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationState,
-          history,
-          userMessage: trimmed,
-          collectedInfo: updatedInfo,
-        }),
-      });
-      const data = await res.json();
-
-      setMessages((prev) => [
-        ...prev,
-        { id: nextId(), role: "clarion", text: data.reply },
-      ]);
-
-      const nextState = getNextState(conversationState);
-      setConversationState(nextState);
-
-      if (nextState === CONVERSATION_STATES.DONE && !emailSentRef.current) {
-        emailSentRef.current = true;
-        try {
-          await sendGrievanceEmail(updatedInfo);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: nextId(),
-              role: "clarion",
-              text: "Message sent. Clarion has been told about your request.",
-            },
-          ]);
-        } catch (error) {
-          console.error(
-            "Grievance email failed:",
-            error?.text ?? error?.message ?? error
-          );
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: nextId(),
-              role: "clarion",
-              text: "I've written it all down. If the message doesn't go through, reach out again. I'm always here.",
-            },
-          ]);
-        }
+    if (nextState === CONVERSATION_STATES.DONE && !emailSentRef.current) {
+      emailSentRef.current = true;
+      try {
+        await sendGrievanceEmail(updatedInfo);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: nextId(),
+            role: "clarion",
+            text: "Message sent. Clarion has been told about your request.",
+          },
+        ]);
+      } catch (error) {
+        console.error(
+          "Grievance email failed:",
+          error?.text ?? error?.message ?? error
+        );
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: nextId(),
+            role: "clarion",
+            text: "I've written it all down. If the message doesn't go through, reach out again. I'm always here.",
+          },
+        ]);
       }
-    } catch (error) {
-      console.error("Message failed:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: nextId(),
-          role: "clarion",
-          text: "Give me a moment. Let me think about this before I answer.",
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
     }
   };
 
@@ -208,7 +263,7 @@ export default function ChatWidget() {
         type="button"
         onClick={() => setIsOpen(true)}
         aria-label="Talk to Clarion"
-        className="fixed bottom-6 right-6 z-[70] flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-horizon-primary shadow-glow-md transition-shadow hover:shadow-glow-lg"
+        className="fixed bottom-6 right-6 z-[70] flex h-16 w-16 items-center justify-center rounded-full bg-horizon-accent text-horizon-primary shadow-glow-md transition-shadow hover:shadow-glow-lg"
         initial={false}
         animate={{ scale: [1, 1.06, 1] }}
         transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
@@ -249,14 +304,17 @@ export default function ChatWidget() {
             aria-label="Chat with Clarion"
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-horizon-secondary/60 bg-gradient-to-r from-horizon-secondary/80 to-horizon-primary px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
+            <div className="flex shrink-0 items-center justify-between border-b border-horizon-secondary/60 bg-horizon-secondary px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="flex items-center gap-3">
                 <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-                  <Image
+                  <SmoothImage
                     src="/logo.png"
                     alt="Clarion Avatar"
                     width={40}
                     height={40}
+                    quality={70}
+                    sizes="40px"
+                    wrapperClassName="h-full w-full rounded-full"
                     className="h-full w-full object-contain rounded-full ring-2 ring-horizon-accent/40"
                   />
                   <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2 border-horizon-primary shadow-sm" />
@@ -272,7 +330,7 @@ export default function ChatWidget() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={closeChat}
                 aria-label="Close chat"
                 className="rounded-full p-2 text-horizon-text-muted transition-colors hover:bg-horizon-secondary hover:text-horizon-text-light"
               >
@@ -306,7 +364,7 @@ export default function ChatWidget() {
                       key={i}
                       className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
                         i < getStepForState(conversationState)
-                          ? "bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary"
+                          ? "bg-horizon-accent"
                           : "bg-horizon-secondary"
                       }`}
                     />
@@ -318,12 +376,11 @@ export default function ChatWidget() {
             {/* Messages area */}
             <div
               ref={scrollContainerRef}
-              className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-5 bg-gradient-to-b from-horizon-primary to-horizon-primary/95"
+              className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-5 bg-horizon-primary"
             >
               {messages.map((m) => (
                 <ChatBubble key={m.id} message={m} />
               ))}
-              {isTyping && <TypingIndicator />}
               <div ref={messagesEndRef} />
             </div>
 
@@ -337,16 +394,16 @@ export default function ChatWidget() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={isTyping ? "Clarion is thinking..." : "Share what's on your mind..."}
+                placeholder={isThinking ? "Clarion is thinking..." : "Share what's on your mind..."}
                 aria-label="Message Clarion"
-                disabled={isTyping}
+                disabled={isThinking}
                 className="flex-1 rounded-full border border-horizon-secondary bg-horizon-secondary/40 px-4 py-2.5 text-sm text-horizon-text-light placeholder:text-horizon-text-muted/60 outline-none transition-all focus:border-horizon-accent focus:ring-1 focus:ring-horizon-accent/30 disabled:opacity-60"
               />
               <button
                 type="submit"
                 aria-label="Send message"
-                disabled={isTyping || !input.trim()}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-horizon-accent to-horizon-accent-secondary text-horizon-primary transition-all hover:shadow-glow-sm hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
+                disabled={isThinking || !input.trim()}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-horizon-accent text-horizon-primary transition-all hover:shadow-glow-sm hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
               >
                 <svg
                   viewBox="0 0 24 24"

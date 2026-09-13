@@ -64,6 +64,11 @@ export function validateInputForState(state, input) {
       const email = trimmed.match(/[\w.+-]+@[\w-]+\.[\w.]+/)?.[0];
       if (!email)
         return { ok: false, error: "That email doesn't look quite right. What's the best email to reach you at?" };
+      // Catch near-certain provider typos (gmail.co, gamil.com, …) before
+      // they get stored — asking once now beats a bounced email later.
+      const fixed = suggestEmailFix(email);
+      if (fixed)
+        return { ok: false, error: `Did you mean ${fixed}? Send it again to confirm.` };
       return { ok: true, value: email };
     }
     case CONVERSATION_STATES.ASK_PROBLEM:
@@ -73,6 +78,149 @@ export function validateInputForState(state, input) {
     default:
       return { ok: true, value: trimmed };
   }
+}
+
+// Domains that are almost certainly typos of well-known providers
+// (gmail.co, gamil.com, outlok.com, …).
+const EMAIL_TYPO_DOMAINS = {
+  "gmail.co": "gmail.com",
+  "gamil.com": "gmail.com",
+  "gmial.com": "gmail.com",
+  "gmai.com": "gmail.com",
+  "gmail.con": "gmail.com",
+  "gmail.cm": "gmail.com",
+  "gmail.om": "gmail.com",
+  "gmaill.com": "gmail.com",
+  "yahooo.com": "yahoo.com",
+  "yaho.com": "yahoo.com",
+  "yahoo.con": "yahoo.com",
+  "outlok.com": "outlook.com",
+  "outllok.com": "outlook.com",
+  "outlook.con": "outlook.com",
+  "hotmal.com": "hotmail.com",
+  "hotmial.com": "hotmail.com",
+  "hotmail.con": "hotmail.com",
+  "iclod.com": "icloud.com",
+  "icloud.con": "icloud.com",
+};
+
+const EMAIL_CANONICAL = {
+  gmail: "gmail.com",
+  yahoo: "yahoo.com",
+  outlook: "outlook.com",
+  hotmail: "hotmail.com",
+  icloud: "icloud.com",
+};
+
+// Returns the corrected address for near-certain provider typos, else null.
+export function suggestEmailFix(email) {
+  const raw = String(email ?? "");
+  const at = raw.toLowerCase().lastIndexOf("@");
+  if (at === -1) return null;
+  const user = raw.slice(0, at);
+  const domain = raw.toLowerCase().slice(at + 1).replace(/\.+$/, "");
+  if (EMAIL_TYPO_DOMAINS[domain]) return `${user}@${EMAIL_TYPO_DOMAINS[domain]}`;
+  const m = domain.match(/^(gmail|yahoo|outlook|hotmail|icloud)\.(co|cm|om|con|cmo|ne|nt|comn|vom)$/);
+  if (m && domain !== EMAIL_CANONICAL[m[1]]) {
+    return `${user}@${EMAIL_CANONICAL[m[1]]}`;
+  }
+  return null;
+}
+
+// Corrections like "no, it's x@gmail.com" or "actually I'm 25" arrive at a
+// LATER step than the info they fix. Detect them so we update the stored
+// field and re-ask the current step — instead of advancing with garbage
+// (e.g. treating an email correction as the user's problem and finishing
+// early with DONE + sending the email).
+export function detectCorrection(state, input, collectedInfo = {}) {
+  const trimmed = String(input ?? "").trim();
+  if (!trimmed) return null;
+
+  // An explicit naming phrase is unambiguous even without "actually" or
+  // "correction" — e.g. while asked for email, "My name is Anwin" should
+  // update the stored name instead of being rejected as a bad email.
+  if (state !== CONVERSATION_STATES.GREETING && state !== CONVERSATION_STATES.ASK_NAME) {
+    const explicitName = trimmed.match(
+      /^(?:my name is|call me|name['’]s)\s+([A-Za-z][A-Za-z'’.-]*(?:\s+[A-Za-z][A-Za-z'’.-]*)?)[!.…\s]*$/i
+    )?.[1];
+    if (
+      explicitName &&
+      explicitName.toLowerCase() !== String(collectedInfo.name ?? "").toLowerCase()
+    ) {
+      return { field: "name", value: explicitName.trim() };
+    }
+  }
+
+  // Same rule for an explicitly stated age after the age step. A bare number
+  // remains the normal answer for the current step, avoiding false updates.
+  if (state !== CONVERSATION_STATES.GREETING && state !== CONVERSATION_STATES.ASK_NAME && state !== CONVERSATION_STATES.ASK_AGE) {
+    const explicitAge = trimmed.match(
+      /^(?:my age is|i am|i['’]m)\s+(\d{1,3})\s*(?:years?\s*old|years?|y\.?o\.?|yrs?)?\s*[!.…]*$/i
+    )?.[1];
+    if (
+      explicitAge &&
+      Number(explicitAge) >= 1 &&
+      Number(explicitAge) <= 120 &&
+      explicitAge !== String(collectedInfo.age ?? "")
+    ) {
+      return { field: "age", value: explicitAge };
+    }
+  }
+
+  // Email correction — an address is distinctive, and people don't normally
+  // paste one into later answers.
+  if (
+    (state === CONVERSATION_STATES.ASK_PROBLEM ||
+      state === CONVERSATION_STATES.DONE) &&
+    collectedInfo.email
+  ) {
+    const email = trimmed.match(/[\w.+-]+@[\w-]+\.[\w.]+/)?.[0];
+    if (
+      email &&
+      email.toLowerCase() !== String(collectedInfo.email).toLowerCase()
+    ) {
+      return { field: "email", value: email };
+    }
+  }
+
+  const laterSteps = [
+    CONVERSATION_STATES.ASK_AGE,
+    CONVERSATION_STATES.ASK_LOCATION,
+    CONVERSATION_STATES.ASK_EMAIL,
+    CONVERSATION_STATES.ASK_PROBLEM,
+    CONVERSATION_STATES.DONE,
+  ];
+  if (!laterSteps.includes(state)) return null;
+  const marker = trimmed.match(
+    /^(?:no[,.]?\s+|actually\s+|sorry[,.]?\s+|correction[,:]?\s*|i meant\s+|my bad[,.]?\s+)/i
+  );
+  if (!marker) return null;
+  const rest = trimmed.slice(marker[0].length).trim();
+  if (!rest) return null;
+
+  // Age correction: "actually 25", "no, 21", "sorry — 30 years old".
+  const ageOnly = rest.match(
+    /^(\d{1,3})\s*(years?\s*old|years?|y\.?o\.?|yrs?)?$/i
+  )?.[1];
+  if (ageOnly && Number(ageOnly) >= 1 && Number(ageOnly) <= 120) {
+    if (String(collectedInfo.age ?? "") !== ageOnly) {
+      return { field: "age", value: ageOnly };
+    }
+    return null;
+  }
+
+  // Name correction with an explicit naming verb: "actually, my name is Anwin".
+  const name = rest.match(
+    /(?:my name is|call me|name['’]s)\s+([A-Za-z][A-Za-z'’.-]*(?:\s+[A-Za-z][A-Za-z'’.-]*)?)/i
+  )?.[1];
+  if (
+    name &&
+    name.toLowerCase() !== String(collectedInfo.name ?? "").toLowerCase()
+  ) {
+    return { field: "name", value: name.trim() };
+  }
+
+  return null;
 }
 
 // 5 collection steps for the progress indicator.

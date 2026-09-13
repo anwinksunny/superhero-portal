@@ -5,13 +5,11 @@ import Powers from "@/components/Powers";
 import Mission from "@/components/Mission";
 import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
-import ChatWidget from "@/components/ChatWidget";
-import ImagePreloader from "@/components/ImagePreloader";
+import LazyChatWidget from "@/components/LazyChatWidget";
 
 export default function Home() {
   return (
     <main className="flex flex-col flex-1">
-      <ImagePreloader />
       <Navbar />
       <Hero />
       <OriginStory />
@@ -19,7 +17,7 @@ export default function Home() {
       <Mission />
       <CallToAction />
       <Footer />
-      <ChatWidget />
+      <LazyChatWidget />
     </main>
   );
 }

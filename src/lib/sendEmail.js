@@ -1,5 +1,3 @@
-import { send } from "@emailjs/browser";
-
 export default async function sendGrievanceEmail(data) {
   const serviceID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
   const templateID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
@@ -21,5 +19,8 @@ export default async function sendGrievanceEmail(data) {
     submittedAt: new Date().toLocaleString(),
   };
 
+  // EmailJS is only needed after the visitor completes the form. Loading it
+  // here keeps its SDK out of the chat's first-open JavaScript chunk.
+  const { send } = await import("@emailjs/browser");
   return send(serviceID, templateID, payload, { publicKey });
 }

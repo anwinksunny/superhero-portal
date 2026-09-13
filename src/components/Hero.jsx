@@ -1,9 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
+import { useMemo } from "react";
 import heroConfig from "@/lib/heroConfig";
+import { isLowEndDevice } from "@/lib/devicePerf";
 import NetworkBackground from "./NetworkBackground";
+import SmoothImage from "./SmoothImage";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -20,27 +22,31 @@ const floatAnimation = {
 };
 
 export default function Hero() {
+  // Very weak hardware renders the same frame statically instead of
+  // running infinite animations — identical at rest, far less CPU/GPU.
+  const lowEnd = useMemo(() => isLowEndDevice(), []);
+
   const openChat = () => {
     window.dispatchEvent(new CustomEvent("open-clarion-chat"));
   };
 
   return (
-    <section className="relative min-h-screen flex items-center bg-horizon-radial overflow-hidden">
+    <section className="relative min-h-screen flex items-center bg-horizon-primary overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
         {/* Interactive connection network — links up around your cursor */}
         <NetworkBackground className="absolute inset-0 opacity-70" />        <motion.div
-          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+          animate={lowEnd ? undefined : { scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-horizon-accent/10 blur-3xl"
         />
         <motion.div
-          animate={{ scale: [1.1, 1, 1.1], opacity: [0.2, 0.4, 0.2] }}
+          animate={lowEnd ? undefined : { scale: [1.1, 1, 1.1], opacity: [0.2, 0.4, 0.2] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-horizon-accent-secondary/8 blur-3xl"
         />
         <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }}
+          animate={lowEnd ? undefined : { scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-1/3 right-1/4 w-72 h-72 rounded-full bg-horizon-accent/5 blur-3xl"
         />
@@ -59,19 +65,6 @@ export default function Hero() {
       <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-28 lg:py-0 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         {/* Text content */}
         <div className="flex flex-col gap-6 z-10">
-          <motion.div
-            custom={0}
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-            className="inline-flex items-center gap-2.5 self-start rounded-md border border-horizon-accent/40 bg-horizon-secondary/80 px-3.5 py-1.5 backdrop-blur-md shadow-[0_0_15px_-3px_rgba(245,169,71,0.2)]"
-          >
-            <span className="h-2 w-2 rotate-45 bg-horizon-accent shadow-[0_0_8px_#F5A947]" />
-            <span className="text-xs font-bold tracking-[0.2em] uppercase text-horizon-accent">
-              The Moment of Clarity
-            </span>
-          </motion.div>
-
           <motion.h1
             custom={1}
             initial="hidden"
@@ -87,7 +80,7 @@ export default function Hero() {
             initial="hidden"
             animate="visible"
             variants={fadeUp}
-            className="text-lg sm:text-xl text-gradient-accent font-semibold max-w-md"
+            className="text-2xl sm:text-[1.7rem] text-horizon-accent font-cursive font-semibold max-w-md leading-snug"
           >
             {heroConfig.tagline}
           </motion.p>
@@ -116,7 +109,7 @@ export default function Hero() {
               onClick={openChat}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-7 py-3.5 text-sm font-bold text-horizon-primary shadow-glow-md transition-shadow duration-300 hover:shadow-glow-lg"
+              className="inline-flex items-center gap-2 rounded-full bg-horizon-accent px-7 py-3.5 text-sm font-bold text-horizon-primary shadow-glow-md transition-shadow duration-300 hover:shadow-glow-lg"
             >
               Talk to Clarion
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -143,43 +136,46 @@ export default function Hero() {
           variants={fadeUp}
           className="relative mx-auto lg:mx-0 w-full max-w-md lg:max-w-lg aspect-square"
         >
-          <motion.div animate={floatAnimation} className="relative w-full h-full">
-            <Image
+          <motion.div animate={lowEnd ? undefined : floatAnimation} className="relative w-full h-full">
+            <SmoothImage
               src="/clarion-hero-cutout.png"
               alt="Clarion standing on a rooftop at dawn, skyline glowing behind them"
               fill
-              priority
+              eager
+              fetchPriority="high"
+              quality={80}
               sizes="(max-width: 1024px) 100vw, 50vw"
+              wrapperClassName="h-full w-full"
               className="object-contain drop-shadow-[0_0_60px_rgba(245,169,71,0.15)]"
             />
           </motion.div>
-          {/* Glow ring behind hero */}
+          {/* Glow behind hero */}
           <div
             aria-hidden="true"
-            className="absolute inset-0 rounded-full bg-gradient-to-br from-horizon-accent/10 to-horizon-accent-secondary/5 blur-3xl -z-10 scale-110"
+            className="absolute inset-0 rounded-full bg-horizon-accent/10 blur-3xl -z-10 scale-110"
           />
           {/* Accent ring */}
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            animate={lowEnd ? undefined : { rotate: 360 }}
+            transition={lowEnd ? undefined : { duration: 30, repeat: Infinity, ease: "linear" }}
             aria-hidden="true"
             className="absolute inset-[-10%] rounded-full border border-dashed border-horizon-accent/15 -z-10"
           />
         </motion.div>
       </div>
 
-      {/* Background texture */}
-      <Image
-        src="/hero-bg-texture.png"
-        alt=""
-        aria-hidden="true"
-        fill
-        sizes="100vw"
-        className="absolute inset-0 -z-10 object-cover opacity-10"
-      />
-
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-horizon-secondary to-transparent" />
+      {/* Background texture — decorative, lazy, reveals only when complete */}
+      <div className="absolute inset-0 -z-10" aria-hidden="true">
+        <SmoothImage
+          src="/hero-bg-texture.png"
+          alt=""
+          fill
+          quality={50}
+          sizes="100vw"
+          wrapperClassName="h-full w-full"
+          className="object-cover opacity-10"
+        />
+      </div>
     </section>
   );
 }

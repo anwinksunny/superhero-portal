@@ -2,7 +2,7 @@
 
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
-import Image from "next/image";
+import SmoothImage from "./SmoothImage";
 import heroConfig from "@/lib/heroConfig";
 
 export default function Navbar() {
@@ -31,13 +31,16 @@ export default function Navbar() {
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
         <a href="#" className="flex items-center gap-3 group">
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-glow-sm group-hover:scale-105 transition-transform duration-200">
-            <Image
+            <SmoothImage
               src="/logo.png"
               alt="Clarion Logo"
               width={40}
               height={40}
+              eager
+              quality={75}
+              sizes="40px"
+              wrapperClassName="h-full w-full"
               className="h-full w-full object-contain"
-              priority
             />
           </div>
           <span className="text-xl font-bold text-horizon-text-light tracking-tight">
@@ -58,7 +61,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={openChat}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-5 py-2 text-sm font-semibold text-horizon-primary shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:scale-105"
+            className="inline-flex items-center gap-2 rounded-full bg-horizon-accent px-5 py-2 text-sm font-semibold text-horizon-primary shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:scale-105"
           >
             Get Help
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -71,7 +74,7 @@ export default function Navbar() {
         <button
           type="button"
           onClick={openChat}
-          className="md:hidden inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-4 py-2 text-sm font-semibold text-horizon-primary"
+          className="md:hidden inline-flex items-center gap-2 rounded-full bg-horizon-accent px-4 py-2 text-sm font-semibold text-horizon-primary"
         >
           Get Help
         </button>

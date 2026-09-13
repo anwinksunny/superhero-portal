@@ -14,6 +14,8 @@ html {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sora);
+  --font-cursive: var(--font-caveat);
+  --font-display: var(--font-display-serif);
 }
 
 body {
@@ -37,14 +39,13 @@ body {
 }
 
 @utility bg-horizon-radial {
-  background-image: radial-gradient(ellipse at 30% 50%, #1a4a50 0%, #0D2B2E 70%);
+  background-color: #0D2B2E;
+  background-image: none;
 }
 
 @utility text-gradient-accent {
-  background: linear-gradient(135deg, #F5A947 0%, #F2705C 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  color: #F5A947;
 }
 
 @utility animate-float {
@@ -74,6 +75,67 @@ body {
   100% { background-position: 200% center; }
 }
 
+/* Comic reader backdrop — hero texture with a dark tint so panels stay readable.
+   Plain CSS background (cached by the browser, no extra JS / Image cost). */
+.comic-texture-bg {
+  background-color: #040e10;
+  background-image:
+    linear-gradient(rgba(4, 14, 16, 0.88), rgba(4, 14, 16, 0.88)),
+    url("/hero-bg-texture.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Letterbox mat behind each comic panel image (shows in contain gaps + while loading) */
+.comic-panel-mat {
+  background-color: #061416;
+  background-image:
+    linear-gradient(rgba(6, 20, 22, 0.82), rgba(6, 20, 22, 0.82)),
+    url("/hero-bg-texture.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Skip rendering work for off-screen sections until scrolled near.
+   Pure performance hint — no visual change. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
+}
+
+/* Respect users who asked for reduced motion — no change otherwise. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Low-end mode is set after feature detection. Remove expensive paint and
+   animation work while leaving the page layout and content intact. */
+html[data-low-end="true"] *,
+html[data-low-end="true"] *::before,
+html[data-low-end="true"] *::after {
+  animation: none !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-low-end="true"] .blur-3xl,
+html[data-low-end="true"] .backdrop-blur-sm,
+html[data-low-end="true"] .backdrop-blur-md,
+html[data-low-end="true"] .backdrop-blur-lg {
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
 /* Section divider */
 .section-divider {
   position: relative;
@@ -86,5 +148,5 @@ body {
   transform: translateX(-50%);
   width: 120px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #F5A947, transparent);
+  background: #F5A947;
 }

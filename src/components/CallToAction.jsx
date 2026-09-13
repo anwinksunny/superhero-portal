@@ -9,7 +9,7 @@ export default function CallToAction() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-horizon-primary">
+    <section className="relative w-full overflow-hidden bg-horizon-primary cv-auto">
       {/* Background glow effects */}
       <div className="absolute inset-0" aria-hidden="true">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-horizon-accent/5 blur-3xl" />
@@ -32,13 +32,13 @@ export default function CallToAction() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-horizon-text-light leading-tight">
-            Don't face it alone.
+            Don&apos;t face it alone.
             <br />
-            <span className="text-gradient-accent">Clarion is here.</span>
+            <span className="text-horizon-accent">Clarion is here.</span>
           </h2>
 
           <p className="mx-auto max-w-lg text-lg text-horizon-text-muted">
-            Tell {heroConfig.name} what you're going through. No forms, no waiting.
+            Tell {heroConfig.name} what you&apos;re going through. No forms, no waiting.
             Just a real conversation where someone truly listens.
           </p>
 
@@ -47,7 +47,7 @@ export default function CallToAction() {
             onClick={openChat}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
-            className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary px-8 py-4 text-base font-bold text-horizon-primary shadow-glow-md transition-shadow duration-300 hover:shadow-glow-lg"
+            className="inline-flex items-center gap-3 rounded-full bg-horizon-accent px-8 py-4 text-base font-bold text-horizon-primary shadow-glow-md transition-shadow duration-300 hover:shadow-glow-lg"
           >
             Talk to Clarion Now
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

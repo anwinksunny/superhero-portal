@@ -2,94 +2,80 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+import SmoothImage from "./SmoothImage";
 
 const COMIC_PANELS = [
   {
     id: 1,
     image: "/origin/1.png",
     isVertical: false,
-    type: "caption-top-left",
-    caption: "Three months. Same question. Still no answer.",
+    text: "I’d been stuck on the same hard decision for months, and nothing I tried helped me figure it out. The walls of my room felt like they were closing in on me.",
   },
   {
     id: 2,
     image: "/origin/2.png",
     isVertical: false,
-    type: "thought-top-right",
-    thought: "I can't think in here anymore.",
+    text: "I couldn’t think straight anymore, not in that small space. I needed air, and I needed to get away from it all, even just for a moment.",
   },
   {
     id: 3,
     image: "/origin/3.png",
     isVertical: true, // Vertical 1024x1536
-    type: "caption-bottom-left",
-    caption: "So I went up. Because down had stopped making sense.",
+    text: "So I climbed up to the roof of my building, hoping the height might help me see things differently. The city stretched out below me, lit up and endless.",
   },
   {
     id: 4,
     image: "/origin/4.png",
     isVertical: false,
-    type: "speech-top-center",
-    speech: "I don't know which way is forward.",
+    text: "Standing alone at the edge, I finally said what I’d been afraid to admit. “I don’t know which way is forward,” I whispered into the dark.",
   },
   {
     id: 5,
     image: "/origin/5.png",
     isVertical: false,
-    type: "caption-top-center",
-    caption: "The city didn't answer. Something else did.",
+    text: "The city didn’t answer me back. But as the first light of dawn broke over the skyline, something strange began to happen.",
   },
   {
     id: 6,
     image: "/origin/6.png",
     isVertical: false,
-    type: "sfx-and-caption",
-    sfx: "hhhhhnnn...",
-    caption: "Every street. Every rooftop. Every light. Suddenly, a pattern.",
+    text: "As the sunlight touched the skyline, something inside me shifted, like a new sense had switched on that I never knew I had. Every street and rooftop below connected into a single pattern, and for the first time in months, my confusion completely disappeared.",
   },
   {
     id: 7,
     image: "/origin/7.png",
     isVertical: false,
-    type: "caption-bottom-right",
-    caption: "The answer had been there the whole time. I just hadn't been still enough to see it.",
+    text: "The answer had been there the whole time, hidden in plain sight. I just hadn’t been calm enough, or still enough, to see it before now.",
   },
   {
     id: 8,
     image: "/origin/8.png",
     isVertical: false,
-    type: "speech-right-center",
-    speech: "I can feel them.",
+    text: "Something inside me had changed for good. I could feel it — somewhere out there, other people were caught in that exact same fog I’d just escaped.",
   },
   {
     id: 9,
     image: "/origin/9.png",
     isVertical: false,
-    type: "caption-top-wide",
-    caption: "Somewhere out there. Right now. Someone else was standing at their own edge, just like I had been.",
+    text: "Right at that moment, across the city, other people were standing at their own edge, stuck in their own version of my problem. I could sense their confusion like a signal calling out to me.",
   },
   {
     id: 10,
     image: "/origin/10.png",
     isVertical: false,
-    type: "caption-bottom-wide",
-    caption: "I didn't choose this. It chose me, the moment I finally stood still.",
+    text: "I never asked for this power, and I definitely didn’t expect it. But I understood, standing there in the sunrise, that this was who I was now.",
   },
   {
     id: 11,
     image: "/origin/11.png",
     isVertical: true, // Vertical 1024x1536
-    type: "newspaper-bottom-right",
-    caption: "I never picked the name. The city gave it to me. It stuck.",
+    text: "News of a mysterious figure who showed up whenever someone felt hopeless began to spread through the city. People started calling me “the clarion voice in the noise.”",
   },
   {
     id: 12,
     image: "/origin/12.png",
     isVertical: false,
-    type: "titlecard-splash",
-    title: "CLARION",
-    caption: "I am the clear call that cuts through confusion, so no one finds their way out alone.",
+    text: "I never chose the name myself, but it stuck anyway. That’s how Clarion was born — not to fight monsters or villains, but to help people find their way through the noise, so no one has to feel lost alone.",
   },
 ];
 
@@ -125,6 +111,8 @@ export default function OriginStory() {
   // Mobile shows one panel at a time (12 panels); desktop shows 2-panel pages.
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0);
   const touchStartX = useRef(null);
+  const sectionRef = useRef(null);
+  const [isNearViewport, setIsNearViewport] = useState(false);
 
   const isFirstPage = currentPageIndex === 0;
   const isLastPage = currentPageIndex === COMIC_PAGES.length - 1;
@@ -170,6 +158,20 @@ export default function OriginStory() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [nextPage, prevPage]);
 
+  // Do not prefetch comic art while this below-the-fold reader is unseen.
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsNearViewport(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "400px 0px" });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
   // Swipe navigation for the mobile single-panel reader.
   const onTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
@@ -182,232 +184,111 @@ export default function OriginStory() {
     else if (dx > 40) prevPanel();
   };
 
+  // Warm the browser cache for adjacent pages/panels (low priority) so
+  // turning a page feels instant — without blocking the current image.
+  // Current page stays `eager` (revealed only when fully decoded via
+  // SmoothImage); neighbours prefetch silently in the background.
+  useEffect(() => {
+    if (!isNearViewport || typeof window === "undefined") return;
+    const conn = navigator.connection;
+    if (conn?.saveData) return;
+    const queue = [];
+    const nextPage = COMIC_PAGES[currentPageIndex + 1];
+    const prevPage = COMIC_PAGES[currentPageIndex - 1];
+    if (nextPage) queue.push(...nextPage.panels.map((p) => p.image));
+    if (prevPage) queue.push(...prevPage.panels.map((p) => p.image));
+    const nextPanelImg = COMIC_PANELS[currentPanelIndex + 1]?.image;
+    const prevPanelImg = COMIC_PANELS[currentPanelIndex - 1]?.image;
+    if (nextPanelImg) queue.push(nextPanelImg);
+    if (prevPanelImg) queue.push(prevPanelImg);
+    if (queue.length === 0) return;
+    const t = setTimeout(() => {
+      for (const src of [...new Set(queue)]) {
+        const img = new window.Image();
+        img.decoding = "async";
+        img.loading = "lazy";
+        img.fetchPriority = "low";
+        img.src = src;
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [currentPageIndex, currentPanelIndex, isNearViewport]);
+
   const currentPage = COMIC_PAGES[currentPageIndex];
   const progressPercent = ((currentPageIndex + 1) / COMIC_PAGES.length) * 100;
   const currentPanel = COMIC_PANELS[currentPanelIndex];
   const mobileProgressPercent = ((currentPanelIndex + 1) / COMIC_PANELS.length) * 100;
 
-  // Mobile panel: fit inside the fixed viewport-capped reader slot (see
-  // below) so the whole section is visible without scrolling. Vertical
-  // art fits by height, landscape by width — centered on a dark mat.
-  // Overlays live inside the art box, so they always sit on the image.
+  // Mobile panel: art fits inside a fixed-height slot, story caption sits
+  // under the image in a comic-style box.
   const renderMobilePanel = (p) => (
-    <div className="flex h-full w-full items-center justify-center">
-      <div
-        className={`relative ${
-          p.isVertical
-            ? "h-full max-w-full aspect-[2/3]"
-            : "w-full max-h-full aspect-[3/2]"
-        }`}
-      >
-        <Image
-          src={p.image}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-contain"
-        />
+    <div>
+      <div className="flex h-[38dvh] w-full items-center justify-center overflow-hidden rounded-xl border-4 border-black comic-panel-mat shadow-2xl">
+        <div
+          className={`relative ${
+            p.isVertical
+              ? "h-full max-w-full aspect-[2/3]"
+              : "w-full max-h-full aspect-[3/2]"
+          }`}
+        >
+          <SmoothImage
+            src={p.image}
+            alt={`Origin story panel ${p.id}`}
+            fill
+            quality={75}
+            sizes="100vw"
+            wrapperClassName="h-full w-full"
+            className="object-contain"
+          />
 
-        {/* Inner comic panel border */}
-        <div className="absolute inset-0 ring-1 ring-inset ring-black/40 pointer-events-none" />
-
-        {/* Clean Manhwa-style White Box with Black Text */}
-        {renderManhwaOverlay(p)}
+          {/* Inner comic panel border */}
+          <div className="absolute inset-0 ring-1 ring-inset ring-black/40 pointer-events-none" />
+        </div>
       </div>
+      {renderCaption(p, true)}
     </div>
   );
   const renderPanelBox = (p) => (
-    <div
-      key={p.id}
-      className={`relative rounded-xl border-4 border-black bg-[#061416] overflow-hidden shadow-2xl w-full ${
-        p.isVertical ? "aspect-[2/3]" : "aspect-[3/2]"
-      } lg:aspect-auto lg:h-[560px] lg:min-h-[560px]`}
-    >
-      <div className="relative w-full h-full">
-        <Image
-          src={p.image}
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-cover lg:object-contain"
-        />
+    <div key={p.id} className="w-full">
+      <div
+        className={`relative rounded-xl border-4 border-black comic-panel-mat overflow-hidden shadow-2xl w-full ${
+          p.isVertical ? "aspect-[2/3]" : "aspect-[3/2]"
+        } lg:aspect-auto lg:h-[560px] lg:min-h-[560px]`}
+      >
+        <div className="relative w-full h-full">
+          <SmoothImage
+            src={p.image}
+            alt={`Origin story panel ${p.id}`}
+            fill
+            quality={75}
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            wrapperClassName="h-full w-full"
+            className="object-cover lg:object-contain"
+          />
 
-        {/* Inner comic panel border */}
-        <div className="absolute inset-0 ring-1 ring-inset ring-black/40 pointer-events-none" />
-
-        {/* Clean Manhwa-style White Box with Black Text */}
-        {renderManhwaOverlay(p)}
+          {/* Inner comic panel border */}
+          <div className="absolute inset-0 ring-1 ring-inset ring-black/40 pointer-events-none" />
+        </div>
       </div>
+      {renderCaption(p, false)}
     </div>
   );
 
-  // Clean Manhwa-style White Box with Black Text (no "NARRATION", "THOUGHT", "SPEECH" labels)
-  const renderManhwaOverlay = (p) => {
-    switch (p.type) {
-      case "caption-top-left":
-        return (
-          <div className="absolute top-3 left-3 sm:top-6 sm:left-6 max-w-[68%] sm:max-w-xs z-20">
-            <div className="bg-white border-2 border-black p-2.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.caption}&rdquo;
-              </p>
-            </div>
-          </div>
-        );
-
-      case "thought-top-right":
-        return (
-          <div className="absolute top-3 right-3 sm:top-6 sm:right-6 max-w-[68%] sm:max-w-xs z-20 flex flex-col items-end">
-            <div className="bg-white border-2 border-black px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              <p className="text-xs sm:text-sm font-black italic text-black leading-snug">
-                &ldquo;{p.thought}&rdquo;
-              </p>
-            </div>
-            {/* Thought bubble trail dots */}
-            <div className="flex flex-col items-center gap-1 mt-1 mr-6">
-              <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-black shadow-[1px_1px_0px_rgba(0,0,0,1)]" />
-              <div className="w-1.5 h-1.5 rounded-full bg-white border border-black mr-2 shadow-[1px_1px_0px_rgba(0,0,0,1)]" />
-            </div>
-          </div>
-        );
-
-      case "caption-bottom-left":
-        return (
-          <div className="absolute bottom-3 left-3 sm:bottom-6 sm:left-6 max-w-[68%] sm:max-w-xs z-20">
-            <div className="bg-white border-2 border-black p-2.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.caption}&rdquo;
-              </p>
-            </div>
-          </div>
-        );
-
-      case "speech-top-center":
-        return (
-          <div className="absolute top-3 sm:top-6 left-1/2 -translate-x-1/2 max-w-[68%] sm:max-w-xs z-20 flex flex-col items-center">
-            <div className="bg-white border-2 border-black px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.speech}&rdquo;
-              </p>
-            </div>
-            {/* Pointer tail */}
-            <div className="w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-t-[10px] border-t-white -mt-[1px] filter drop-shadow-[0_2px_0_rgba(0,0,0,1)]" />
-          </div>
-        );
-
-      case "caption-top-center":
-        return (
-          <div className="absolute top-3 sm:top-6 left-1/2 -translate-x-1/2 max-w-[80%] sm:max-w-sm w-full z-20">
-            <div className="bg-white border-2 border-black p-2.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.caption}&rdquo;
-              </p>
-            </div>
-          </div>
-        );
-
-      case "sfx-and-caption":
-        return (
-          <>
-            {/* SFX near face */}
-            <div className="absolute top-1/4 left-1/4 z-20">
-              <div className="bg-white border-2 border-black px-3 py-1 -rotate-6 shadow-[3px_3px_0px_rgba(0,0,0,1)]">
-                <span className="text-sm sm:text-lg font-black italic tracking-widest text-black font-mono">
-                  {p.sfx}
-                </span>
-              </div>
-            </div>
-            {/* Caption bottom edge */}
-            <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 max-w-[80%] sm:max-w-sm w-full z-20">
-              <div className="bg-white border-2 border-black p-2.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
-                <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                  &ldquo;{p.caption}&rdquo;
-                </p>
-              </div>
-            </div>
-          </>
-        );
-
-      case "caption-bottom-right":
-        return (
-          <div className="absolute bottom-3 right-3 sm:bottom-6 sm:right-6 max-w-[68%] sm:max-w-xs z-20">
-            <div className="bg-white border-2 border-black p-2.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.caption}&rdquo;
-              </p>
-            </div>
-          </div>
-        );
-
-      case "speech-right-center":
-        return (
-          <div className="absolute top-1/3 right-3 sm:right-8 max-w-[68%] sm:max-w-xs z-20 flex flex-col items-start">
-            <div className="bg-white border-2 border-black px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.speech}&rdquo;
-              </p>
-            </div>
-            {/* Tail pointing left */}
-            <div className="w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[10px] border-r-white -ml-2 -mt-3 filter drop-shadow-[-2px_0_0_rgba(0,0,0,1)]" />
-          </div>
-        );
-
-      case "caption-top-wide":
-        return (
-          <div className="absolute top-3 sm:top-6 left-1/2 -translate-x-1/2 max-w-[85%] sm:max-w-md w-full z-20">
-            <div className="bg-white border-2 border-black p-2.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.caption}&rdquo;
-              </p>
-            </div>
-          </div>
-        );
-
-      case "caption-bottom-wide":
-        return (
-          <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 max-w-[85%] sm:max-w-md w-full z-20">
-            <div className="bg-white border-2 border-black p-2.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] text-center">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.caption}&rdquo;
-              </p>
-            </div>
-          </div>
-        );
-
-      case "newspaper-bottom-right":
-        return (
-          <div className="absolute bottom-3 right-3 sm:bottom-6 sm:right-6 max-w-[68%] sm:max-w-xs z-20">
-            <div className="bg-white border-2 border-black p-2.5 sm:p-3.5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              <p className="text-xs sm:text-sm font-black text-black leading-snug">
-                &ldquo;{p.caption}&rdquo;
-              </p>
-            </div>
-          </div>
-        );
-
-      case "titlecard-splash":
-        return (
-          <div className="absolute bottom-3 left-3 right-3 sm:bottom-6 sm:left-6 sm:right-6 z-20">
-            <div className="bg-white border-2 border-black p-4 sm:p-5 shadow-[5px_5px_0px_rgba(0,0,0,1)]">
-              <h3 className="text-xl sm:text-4xl font-black text-black tracking-tight uppercase mb-1">
-                {p.title}
-              </h3>
-              <p className="text-xs sm:text-sm font-black italic text-neutral-900 leading-snug">
-                &ldquo;{p.caption}&rdquo;
-              </p>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
+  // Story caption under each panel — comic-style white box, black text.
+  const renderCaption = (p, isMobile) => (
+    <div
+      className={`rounded-xl border-2 border-black bg-white p-3.5 sm:p-4 shadow-[4px_4px_0px_rgba(0,0,0,1)] ${
+        isMobile ? "mt-3 min-h-[8rem]" : "mt-3"
+      }`}
+    >
+      <p className="text-xs sm:text-sm font-bold leading-relaxed text-black">
+        {p.text}
+      </p>
+    </div>
+  );
 
   return (
-    <section id="origin" className="relative w-full bg-horizon-secondary py-12 lg:py-32 overflow-hidden">
+    <section ref={sectionRef} id="origin" className="relative w-full bg-horizon-secondary py-12 lg:py-32 overflow-hidden cv-auto">
       {/* Background ambient glow */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full bg-horizon-accent/5 blur-3xl" />
@@ -415,7 +296,7 @@ export default function OriginStory() {
       </div>
 
       {/* Top divider accent */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-horizon-accent/40 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-horizon-accent/40" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section Header */}
@@ -427,7 +308,7 @@ export default function OriginStory() {
             transition={{ duration: 0.7 }}
             className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-horizon-text-light tracking-tight"
           >
-            My Origin <span className="text-gradient-accent">Story</span>
+            My Origin <span className="text-horizon-accent">Story</span>
           </motion.h2>
         </div>
 
@@ -438,7 +319,7 @@ export default function OriginStory() {
             {/* Top Progress Bar */}
             <div className="w-full bg-neutral-900 h-1.5">
               <motion.div
-                className="bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary h-full"
+                className="bg-horizon-accent h-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ duration: 0.3 }}
@@ -457,7 +338,7 @@ export default function OriginStory() {
             </div>
 
             {/* 2 Panels Viewport */}
-            <div className="p-4 sm:p-6 bg-[#040e10]">
+            <div className="p-4 sm:p-6 comic-texture-bg">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentPage.pageId}
@@ -510,7 +391,7 @@ export default function OriginStory() {
                 onClick={nextPage}
                 disabled={isLastPage}
                 aria-label="Next page"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary text-horizon-primary border-2 border-black px-6 py-2.5 text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-transform disabled:opacity-40 disabled:pointer-events-none"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-horizon-accent text-horizon-primary border-2 border-black px-6 py-2.5 text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-transform disabled:opacity-40 disabled:pointer-events-none"
               >
                 Next Page
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -525,7 +406,7 @@ export default function OriginStory() {
             {/* Top Progress Bar */}
             <div className="w-full bg-neutral-900 h-1.5">
               <motion.div
-                className="bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary h-full"
+                className="bg-horizon-accent h-full"
                 initial={false}
                 animate={{ width: `${mobileProgressPercent}%` }}
                 transition={{ duration: 0.3 }}
@@ -542,27 +423,23 @@ export default function OriginStory() {
               </span>
             </div>
 
-            {/* Swipeable panel — viewport-capped slot so the whole
-                section fits on screen; art shrinks to fit */}
+            {/* Swipeable panel — art on top, story caption under it */}
             <div
-              className="p-3 bg-[#040e10] touch-pan-y"
+              className="p-3 comic-texture-bg touch-pan-y"
               onTouchStart={onTouchStart}
               onTouchEnd={onTouchEnd}
             >
-              <div className="relative h-[48dvh] w-full overflow-hidden rounded-xl border-4 border-black bg-[#061416] shadow-2xl">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentPanel.id}
-                    initial={{ opacity: 0, x: 40 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -40 }}
-                    transition={{ duration: 0.25 }}
-                    className="absolute inset-0"
-                  >
-                    {renderMobilePanel(currentPanel)}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentPanel.id}
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {renderMobilePanel(currentPanel)}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* Mobile controls: arrows + dots */}
@@ -602,7 +479,7 @@ export default function OriginStory() {
                 onClick={nextPanel}
                 disabled={isLastPanel}
                 aria-label="Next panel"
-                className="inline-flex items-center justify-center bg-gradient-to-r from-horizon-accent to-horizon-accent-secondary text-horizon-primary border-2 border-black w-10 h-10 text-lg font-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] transition-transform disabled:opacity-40"
+                className="inline-flex items-center justify-center bg-horizon-accent text-horizon-primary border-2 border-black w-10 h-10 text-lg font-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] transition-transform disabled:opacity-40"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M9 18l6-6-6-6" />

@@ -1,124 +1,53 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { buildSystemPrompt } from "@/lib/systemPrompt";
-import { getHardcodedReply, getPromptForState } from "@/lib/conversationFlow";
-import heroConfig from "@/lib/heroConfig";
-
-function getModel() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  // Lightweight default: Flash-Lite has no thinking-token overhead
-  // (~17 tokens vs ~542 on full Flash), so replies are faster/cheaper
-  // and don't get cut off. Override with GEMINI_MODEL in .env.local.
-  const modelName = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
-  if (!apiKey) {
-    throw new Error("Missing GEMINI_API_KEY in .env.local");
-  }
-  const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({
-    model: modelName,
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1024,
-    },
-  });
-}
-
-function toContent(role, text) {
-  return {
-    role,
-    parts: [{ text: String(text ?? "") }],
-  };
-}
-
-// Gemini requires history to start with a "user" turn and alternate
-// user/model. The widget sends the initial Clarion greeting plus the
-// current message inside `history`, so sanitize before startChat.
-function sanitizeHistory(history, userMessage) {
-  const mapped = (history ?? [])
-    .filter((m) => m && (m.role === "user" || m.role === "clarion") && m.text)
-    .map((m) => toContent(m.role === "clarion" ? "model" : "user", m.text));
-
-  // Drop everything before the first user turn (e.g. opening greeting).
-  const firstUser = mapped.findIndex((m) => m.role === "user");
-  const trimmed = firstUser === -1 ? [] : mapped.slice(firstUser);
-
-  // Collapse consecutive same-role turns (keep the last one).
-  const deduped = [];
-  for (const m of trimmed) {
-    const last = deduped[deduped.length - 1];
-    if (last && last.role === m.role) {
-      last.parts = m.parts;
-    } else {
-      deduped.push({ ...m, parts: [...m.parts] });
-    }
-  }
-
-  // The current userMessage is sent via sendMessage(), so don't duplicate
-  // it as the last history entry.
-  if (
-    userMessage &&
-    deduped.length > 0 &&
-    deduped[deduped.length - 1].role === "user" &&
-    deduped[deduped.length - 1].parts[0]?.text === userMessage
-  ) {
-    deduped.pop();
-  }
-
-  return deduped;
-}
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
-  let conversationState = "GREETING";
-  let userMessage = "";
-  let collectedInfo = {};
-
+  let fallback = "I’m here with you. Please try that again.";
   try {
     const body = await request.json();
-    const {
-      conversationState: state,
-      history = [],
-      userMessage: msg = "",
-      collectedInfo: info = {},
-    } = body;
-    conversationState = state ?? conversationState;
-    userMessage = msg;
-    collectedInfo = info;
+    const { message, stage, isCorrection = false, isValid = true } = body;
+    fallback = String(body.fallback ?? fallback).trim() || fallback;
+    const text = String(message ?? "").trim().slice(0, 2_000);
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!text || !apiKey) throw new Error("AI is not configured");
 
-    // Don't spend quota on empty input — return the step prompt directly.
-    if (!String(userMessage ?? "").trim()) {
-      return Response.json({
-        reply: getPromptForState(conversationState, heroConfig),
-        source: "fallback",
-      });
-    }
+    // Flash-Lite is the stable, low-latency model for this short, high-volume
+    // chat flow. An environment variable can still select a different model.
+    const model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{
+              text: `You are Clarion: calm, practical and warm. This is a short intake chat at stage ${String(stage ?? "unknown")}. Reply with one concise, natural sentence. ${isCorrection ? "The visitor corrected an earlier detail. Acknowledge it and ask the current stage's question again." : "Respond naturally and keep the intake moving."} ${isValid ? "" : "Their input is not valid for this stage; gently explain what is needed."} Required next-step intent: ${String(fallback ?? "Continue the conversation.")}. Use that intent to choose the question, but never quote or repeat it verbatim and never add a second acknowledgement. Do not invent, request, repeat, or expose personal data beyond the visitor's message. Do not claim to be a professional or diagnose. If they indicate immediate danger or self-harm, encourage contacting local emergency services or a trusted person immediately.`,
+            }],
+          },
+          contents: [{ role: "user", parts: [{ text }] }],
+          generationConfig: {
+            maxOutputTokens: 70,
+            thinkingConfig: { thinkingLevel: "minimal" },
+          },
+        }),
+        signal: AbortSignal.timeout(8_000),
+      }
+    );
 
-    const systemInstruction = {
-      role: "system",
-      parts: [{ text: buildSystemPrompt(heroConfig, conversationState) }],
-    };
+    if (!response.ok) throw new Error(`Gemini returned ${response.status}`);
+    const data = await response.json();
+    const reply = data?.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text ?? "")
+      .join("")
+      .trim();
+    if (!reply) throw new Error("Gemini returned no text");
 
-    const model = getModel();
-    const chat = model.startChat({
-      systemInstruction,
-      history: sanitizeHistory(history, userMessage),
-    });
-
-    const result = await chat.sendMessage(userMessage);
-    // Join ALL text parts — response.text() can drop content when the
-    // model returns multiple parts.
-    const parts = result.response?.candidates?.[0]?.content?.parts ?? [];
-    const joined = parts
-      .filter((p) => typeof p.text === "string" && !p.thought)
-      .map((p) => p.text)
-      .join("");
-    const reply = (joined || result.response.text() || "").trim();
-    if (!reply) throw new Error("Empty reply from Gemini");
-
-    return Response.json({ reply, source: "ai" });
+    return NextResponse.json({ reply, source: "ai" });
   } catch (error) {
-    console.error("Gemini chat call failed:", error);
-    // AI unavailable — fall back to the hardcoded scripted flow so the
-    // chat keeps working and still collects every field in order.
-    const reply = getHardcodedReply(conversationState, userMessage, collectedInfo);
-    return Response.json({ reply, source: "fallback" });
+    console.error("Chat AI unavailable:", error);
+    return NextResponse.json({ reply: fallback, source: "fallback" });
   }
 }
